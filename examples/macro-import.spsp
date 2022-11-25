@@ -1,0 +1,13 @@
+(let import
+    (macro [module-name]
+        (do
+            (let module (import-module module-name::name))
+            (expr!
+                (let (inline! module-name) (inline-value! module))))))
+
+
+(import functools)
+
+
+(let total (functools::reduce + [1 2 3] 0))
+(print total)

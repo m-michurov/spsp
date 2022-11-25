@@ -1,0 +1,16 @@
+(let for 
+	(macro [var coll body] 
+	    (do 
+	        (let body-fn (eval! (expr! (lambda [(inline! var)] (inline! body)))))
+            (expr! 
+                (do 
+                    (list (map (inline-value! body-fn) (inline! coll)))
+                    None)))))
+
+
+(let x [1 2 3])
+(let y ['a' 'b' 'c'])
+
+
+(for [a b] (zip x y)
+    (print (+ (str a) ' ' b)))

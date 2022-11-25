@@ -1,0 +1,13 @@
+(let when
+	(macro [cond body]
+		(expr!
+			(if (inline! cond)
+				(inline! body)
+				None))))
+
+
+(let user-input (input 'Type something . . . '))
+
+
+(when (not user-input)
+    (print 'Your input was empty'))
