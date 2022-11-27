@@ -13,7 +13,6 @@ from .errors import (
     SpspValueError, SpspInvalidBindingError
 )
 from .keywords import Keyword
-from .special_symbols import SpecialSymbols
 from .scope import Scope
 
 __all__ = [
@@ -21,7 +20,7 @@ __all__ = [
 ]
 
 
-@dataclass
+@dataclass(frozen=True, repr=False)
 class Macro:
     _arguments: tuple[str, ...]
     _body: Expression.AnyExpression
@@ -29,15 +28,6 @@ class Macro:
 
     def __call__(self, *args: Any) -> Any:
         return evaluate(self._body, scope=self._bind_arguments(args))
-
-    def __str__(self) -> str:
-        return f'{SpecialSymbols.LeftParenthesis}{Keyword.Macro}' \
-               f' {SpecialSymbols.LeftSquareBracket}{" ".join(self._arguments)}{SpecialSymbols.RightSquareBracket}' \
-               f' {self._body}' \
-               f'{SpecialSymbols.RightParenthesis}'
-
-    def __repr__(self) -> str:
-        return self.__str__()
 
     def _bind_arguments(self, args: Collection[Any]) -> Scope:
         local_scope = self._closure_scope.derive()
@@ -62,7 +52,7 @@ class Macro:
         return local_scope
 
 
-@dataclass
+@dataclass(frozen=True, repr=False)
 class Lambda:
     _arguments: Expression.List
     _body: Expression.AnyExpression
@@ -70,13 +60,6 @@ class Lambda:
 
     def __call__(self, *args: Any) -> Any:
         return evaluate(self._body, scope=self._bind_arguments(args))
-
-    def __str__(self) -> str:
-        return f'{SpecialSymbols.LeftParenthesis}{Keyword.Lambda} {self._arguments} {self._body}' \
-               f'{SpecialSymbols.RightParenthesis}'
-
-    def __repr__(self) -> str:
-        return self.__str__()
 
     def _bind_arguments(self, args: Collection[Any]) -> Scope:
         local_scope = self._closure_scope.derive()
