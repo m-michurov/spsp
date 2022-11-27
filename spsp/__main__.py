@@ -31,7 +31,7 @@ def run_repl() -> None:
         with io.StringIO(read_line()) as input_stream:
             try:
                 for expression in parse(Tokenizer(input_stream)):
-                    print(evaluate(expression, scope).__str__())
+                    print(evaluate(expression, scope))
             except SpspBaseError as e:
                 print(f'{type(e).__name__}: {e}')
 
