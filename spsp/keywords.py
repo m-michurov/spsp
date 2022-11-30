@@ -28,3 +28,5 @@ class Keyword(str, Enum):
 
     Inline = 'inline!'
     InlineLiteral = 'inline-value!'
+
+    VariadicMarker = '&'
