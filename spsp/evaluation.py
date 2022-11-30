@@ -160,19 +160,38 @@ def _if(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
     return evaluate(when_false, scope)
 
 
+def is_variadic(targets: Expression.List) -> (bool, Expression.Identifier | None):
+    if len(targets.items) <= 1:
+        return False, None
+
+    marker = targets.items[-2]
+    if not isinstance(marker, Expression.Identifier) or Keyword.VariadicMarker != marker.name:
+        return False, None
+
+    rest = targets.items[-1]
+    if not isinstance(rest, Expression.Identifier):
+        raise SpspInvalidBindingTargetError(rest, 'Cannot bind varargs to')
+
+    return True, rest
+
+
 def bind_destructuring(
-        targets: Expression.List,
+        target_expression: Expression.List,
         values: Collection[Any],
         mutable: bool,
         scope: Scope
 ) -> None:
-    if len(targets.items) > len(values):
-        raise SpspInvalidBindingError(f'Not enough values to unpack (expected {len(targets.items)})')
+    variadic, rest_identifier = is_variadic(target_expression)
 
-    if len(targets.items) < len(values):
-        raise SpspInvalidBindingError(f'Too many values to unpack (expected {len(targets.items)})')
+    targets = target_expression.items[:-2] if variadic else target_expression.items
 
-    for target, value in zip(targets.items, values):
+    if len(targets) > len(values):
+        raise SpspInvalidBindingError(f'Not enough values to unpack (expected {len(target_expression.items)})')
+
+    if len(targets) < len(values) and not variadic:
+        raise SpspInvalidBindingError(f'Too many values to unpack (expected {len(target_expression.items)})')
+
+    for target, value in zip(targets, values):
         if isinstance(target, Expression.Identifier):
             scope.bind(target.name, value, mutable)
             continue
@@ -190,6 +209,13 @@ def bind_destructuring(
             continue
 
         raise SpspInvalidBindingTargetError(target)
+
+    if rest_identifier is not None:
+        scope.bind(
+            rest_identifier.name,
+            tuple(values[len(targets):]),
+            mutable
+        )
 
 
 @special_form(Keyword.Let, arity=2)
