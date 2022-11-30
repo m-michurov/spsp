@@ -22,6 +22,8 @@ def _parse(
         at_most: int | None = None,
         until: Type[Token.AnyToken] | None = None
 ) -> Iterable[Expression.AnyExpression]:
+    assert at_most is None or at_most > 0
+
     parsed = 0
 
     token: Token.AnyToken | None = None
