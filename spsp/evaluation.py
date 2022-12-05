@@ -53,7 +53,7 @@ class Arguments:
 
         self._target = target
 
-    def bind(self, values: Any | Collection[Any], mutable: bool, scope: Scope) -> None:
+    def bind(self, values: Collection[Any], mutable: bool, scope: Scope) -> None:
         bind_structural(self._target, values, mutable, scope)
 
 
