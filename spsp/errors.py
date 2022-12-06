@@ -21,6 +21,11 @@ class SpspBaseError(RuntimeError):
 
 @dataclass(frozen=True)
 class SpspSyntaxError(SpspBaseError):
+    """
+    Generic syntax error.
+
+    This is a parse time error.
+    """
     position: int
     description: str
 
@@ -30,6 +35,11 @@ class SpspSyntaxError(SpspBaseError):
 
 @dataclass(frozen=True)
 class SpspNameError(SpspBaseError):
+    """
+    This error is used to indicate that a given name could not be resolved in current scope.
+
+    This is an evaluation time error.
+    """
     name: str
 
 
@@ -46,16 +56,33 @@ class SpspTypeError(SpspBaseError):
 
 @dataclass(frozen=True)
 class SpspValueError(SpspBaseError):
+    """
+    This error is used to indicate that a value is not what it was expected to be.
+
+    For example, `SpspValueError` is raised by special form `lambda` when its arguments list is not a list expression.
+
+    This is an evaluation time error.
+    """
     why: str
 
 
 @dataclass(frozen=True)
 class SpspInvalidBindingError(SpspBaseError):
+    """
+    This error is used to indicate that a binding operation cannot be performed.
+
+    This is an evaluation time error.
+    """
     why: str
 
 
 @dataclass(frozen=True)
 class SpspInvalidBindingTargetError(SpspBaseError):
+    """
+    This error is used to indicate that binding-related operation cannot be performed for a given target.
+
+    This is an evaluation time error.
+    """
     target: str | Any
     why: str | None = None
 
@@ -72,6 +99,11 @@ class SpspInvalidBindingTargetError(SpspBaseError):
 
 @dataclass(frozen=True)
 class SpspArityError(SpspBaseError):
+    """
+    This error is used to indicate that a built-in special form is used with wrong number of arguments.
+
+    This is an evaluation time error.
+    """
     what: Any
     expected: int
     actual: int

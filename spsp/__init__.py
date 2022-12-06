@@ -1,11 +1,18 @@
 from .tokenizer import Tokenizer
-from .errors import SpspSyntaxError, SpspBaseError
+from . import errors
 from . import Token
+from .parser import parse
+from .scope import Scope
+from .evaluation import evaluate
 
 __all__ = [
     'Tokenizer',
     'Token',
 
-    'SpspBaseError',
-    'SpspSyntaxError',
+    'parse',
+
+    'errors',
+
+    'Scope',
+    'evaluate'
 ]

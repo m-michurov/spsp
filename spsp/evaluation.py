@@ -20,9 +20,46 @@ __all__ = [
 ]
 
 
+def check_structural_binding_target(
+        target: Expression.List,
+        allow_nested: bool = True
+) -> None:
+    for item in target.items:
+        if isinstance(item, Expression.Identifier):
+            continue
+
+        if isinstance(item, Expression.List):
+            if not allow_nested:
+                raise SpspValueError(f'Structural binding not allowed')
+
+            check_structural_binding_target(item)
+            continue
+
+        raise SpspInvalidBindingTargetError(target)
+
+
+class Arguments:
+    _target: Expression.List
+
+    def __init__(
+            self,
+            target: Expression.List,
+            allow_structured_binding: bool = True
+    ) -> None:
+        if not isinstance(target, Expression.List):
+            raise SpspValueError(f'Binding target must be {Expression.List.__name__}')
+
+        check_structural_binding_target(target, allow_structured_binding)
+
+        self._target = target
+
+    def bind(self, values: Collection[Any], mutable: bool, scope: Scope) -> None:
+        bind_structural(self._target, values, mutable, scope)
+
+
 @dataclass(frozen=True, repr=False)
-class Macro:
-    _arguments: tuple[str, ...]
+class Function:
+    _arguments: Arguments
     _body: Expression.AnyExpression
     _closure_scope: Scope
 
@@ -31,40 +68,12 @@ class Macro:
 
     def _bind_arguments(self, args: Collection[Any]) -> Scope:
         local_scope = self._closure_scope.derive()
-
-        if len(self._arguments) > len(args):
-            raise SpspArityError(
-                f'Not enough arguments (missing {", ".join(self._arguments[len(args):])})',
-                expected=len(self._arguments),
-                actual=len(args)
-            )
-
-        if len(self._arguments) < len(args):
-            raise SpspArityError(
-                f'Too many argument values',
-                expected=len(self._arguments),
-                actual=len(args)
-            )
-
-        for argument, value in zip(self._arguments, args):
-            local_scope.const(argument, value)
-
+        self._arguments.bind(args, mutable=False, scope=local_scope)
         return local_scope
 
 
-@dataclass(frozen=True, repr=False)
-class Lambda:
-    _arguments: Expression.List
-    _body: Expression.AnyExpression
-    _closure_scope: Scope
-
-    def __call__(self, *args: Any) -> Any:
-        return evaluate(self._body, scope=self._bind_arguments(args))
-
-    def _bind_arguments(self, args: Collection[Any]) -> Scope:
-        local_scope = self._closure_scope.derive()
-        bind_destructuring(self._arguments, args, mutable=False, scope=local_scope)
-        return local_scope
+class Macro(Function):
+    pass
 
 
 SpecialEvaluator: TypeAlias = Callable[[tuple[Expression.AnyExpression, ...], Scope], Any]
@@ -160,19 +169,38 @@ def _if(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
     return evaluate(when_false, scope)
 
 
-def bind_destructuring(
-        targets: Expression.List,
+def is_variadic(targets: Expression.List) -> (bool, Expression.Identifier | None):
+    if len(targets.items) <= 1:
+        return False, None
+
+    marker = targets.items[-2]
+    if not isinstance(marker, Expression.Identifier) or Keyword.VariadicMarker != marker.name:
+        return False, None
+
+    rest = targets.items[-1]
+    if not isinstance(rest, Expression.Identifier):
+        raise SpspInvalidBindingTargetError(rest, 'Cannot bind varargs to')
+
+    return True, rest
+
+
+def bind_structural(
+        target_expression: Expression.List,
         values: Collection[Any],
         mutable: bool,
         scope: Scope
 ) -> None:
-    if len(targets.items) > len(values):
-        raise SpspInvalidBindingError(f'Not enough values to unpack (expected {len(targets.items)})')
+    variadic, rest_identifier = is_variadic(target_expression)
 
-    if len(targets.items) < len(values):
-        raise SpspInvalidBindingError(f'Too many values to unpack (expected {len(targets.items)})')
+    targets = target_expression.items[:-2] if variadic else target_expression.items
 
-    for target, value in zip(targets.items, values):
+    if len(targets) > len(values):
+        raise SpspInvalidBindingError(f'Not enough values to unpack (expected {len(target_expression.items)})')
+
+    if len(targets) < len(values) and not variadic:
+        raise SpspInvalidBindingError(f'Too many values to unpack (expected {len(target_expression.items)})')
+
+    for target, value in zip(targets, values):
         if isinstance(target, Expression.Identifier):
             scope.bind(target.name, value, mutable)
             continue
@@ -186,10 +214,17 @@ def bind_destructuring(
             continue
 
         if isinstance(target, Expression.List):
-            bind_destructuring(target, value, mutable, scope)
+            bind_structural(target, value, mutable, scope)
             continue
 
         raise SpspInvalidBindingTargetError(target)
+
+    if rest_identifier is not None:
+        scope.bind(
+            rest_identifier.name,
+            tuple(values[len(targets):]),
+            mutable
+        )
 
 
 @special_form(Keyword.Let, arity=2)
@@ -212,7 +247,7 @@ def _let(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
 
     if isinstance(target, Expression.List):
         value = evaluate(value_expression, scope)
-        bind_destructuring(target, value, mutable=True, scope=scope)
+        bind_structural(target, value, mutable=True, scope=scope)
         return value
 
     raise SpspInvalidBindingTargetError(target)
@@ -241,9 +276,9 @@ def _lambda(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> An
     args, body = arguments
 
     if not isinstance(args, Expression.List):
-        raise SpspValueError(f'Function arguments list must be {Expression.List.__name__}')
+        raise SpspValueError(f'"{Keyword.Lambda}" arguments list must be {Expression.List.__name__}')
 
-    return Lambda(args, body, scope.derive())
+    return Function(Arguments(args), body, scope.derive())
 
 
 @special_form(Keyword.Do, arity=VARIADIC)
@@ -302,14 +337,8 @@ def _macro(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any
     if not isinstance(args, Expression.List):
         raise SpspValueError(f'"{Keyword.Macro}" arguments list must be {Expression.List.__name__}')
 
-    arg_identifiers: list[str] = []
-
-    for expr in args.items:
-        if not isinstance(expr, Expression.Identifier):
-            raise SpspValueError(
-                f'"{Keyword.Macro}" arguments list must only contain {Expression.Identifier.__name__}s'
-            )
-
-        arg_identifiers.append(expr.name)
-
-    return Macro(tuple(arg_identifiers), body, scope.derive())
+    return Macro(
+        Arguments(args, allow_structured_binding=False),
+        body,
+        scope.derive()
+    )
