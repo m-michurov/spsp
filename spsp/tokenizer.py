@@ -160,11 +160,11 @@ class Tokenizer:
         self._read_next_char(skip_whitespace=True)
 
     def _advance(self) -> Token.AnyToken | None:
+        while not self._end_of_stream and (not self._char or is_whitespace(self._char)):
+            self._read_next_char(skip_whitespace=True)
+
         if self._end_of_stream:
             return Token.EndOfStream(self._stream_position)
-
-        while not self._char or is_whitespace(self._char):
-            self._read_next_char(skip_whitespace=True)
 
         self._token_position = self._stream_position
 
