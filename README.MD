@@ -196,6 +196,31 @@ identifier.
 <module 'types' from 'C:\\DKs\\Python 3.10.7\\lib\\types.py'>
 >>> 
 ```
+### Variadic bindings
+When using structured binding (in `let`, or when 
+declaring function or macro parameters list), you can add
+`& <rest>` (`<rest>` must be an identifier) at the end of target expression
+list to bind any excess arguments to `<rest>`.
+
+**Variadic `let` binding**
+```lisp
+>>> (let [x y & *rest] (range 10))
+range(0, 10)
+>>> x y *rest
+0                       
+1                       
+(2, 3, 4, 5, 6, 7, 8, 9)
+```
+**Variadic functions**
+```lisp
+>>> >>> (let int* (lambda [& *args] (list (map int *args))))
+<spsp.evaluation.Function object at 0x000001A7887A6E00>
+>>> (int* '1' '2' '42')
+[1, 2, 42]
+```
+**Variadic macros**
+
+*See [short-circuit logical and example](examples/macro-short-circuit-and.spsp)*.
 
 ## Python interoperability
 

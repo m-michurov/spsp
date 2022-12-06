@@ -1,0 +1,25 @@
+(let and*
+    (macro [op1 & *rest]
+        (do
+            (let functools (import-module 'functools'))
+            (expr!
+                ((inline-value! functools::reduce)
+                    (lambda [result expr]
+                        (if result
+                            (eval! expr)
+                            result))
+                    (inline-value! *rest)
+                    (inline! op1))))))
+
+
+(print
+    'Result:'
+    (and*
+        (do (print 'Evaluated op #1:' 1) 1)
+        (do (print 'Evaluated op #2:' False) False)
+        (do (print 'Evaluated op #3:' [1 2 3]) [1 2 3])))
+
+; Will print:
+; Evaluated op #1: 1
+; Evaluated op #2: False
+; Result: False
