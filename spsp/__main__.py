@@ -4,7 +4,8 @@ import io
 import sys
 from typing import Collection
 
-from . import Tokenizer, SpspBaseError
+from . import Tokenizer
+from .errors import SpspBaseError
 from .evaluation import evaluate
 from .parser import parse
 from .scope import Scope
