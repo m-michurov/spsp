@@ -4,7 +4,7 @@ import io
 import sys
 from typing import Collection
 
-from . import Tokenizer, SpspBaseError
+from . import Tokenizer
 from .evaluation import evaluate
 from .parser import parse
 from .scope import Scope
@@ -39,7 +39,7 @@ def run_repl() -> None:
             try:
                 for expression in parse(Tokenizer(input_stream)):
                     print(evaluate(expression, scope))
-            except SpspBaseError as e:
+            except Exception as e:
                 print(f'{type(e).__name__}: {e}')
 
 
