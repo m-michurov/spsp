@@ -104,9 +104,6 @@ class Scope:
         if name in Keyword.__members__.values():
             raise SpspInvalidBindingTargetError(target=name, why='Cannot bind to keyword')
 
-        if hasattr(self._builtins, name):
-            raise SpspInvalidBindingTargetError(target=name, why='Cannot bind to built-in')
-
         if (existing := self._bindings.get(name, NOT_FOUND)) is NOT_FOUND:
             self._bindings[name] = Binding(value, binding_type)
             return
@@ -120,9 +117,6 @@ class Scope:
         if name in Keyword.__members__.values():
             raise SpspInvalidBindingTargetError(target=name, why='Cannot unbind keyword')
 
-        if hasattr(self._builtins, name):
-            raise SpspInvalidBindingTargetError(target=name, why='Cannot unbind built-in')
-
         if name in predefined():
             raise SpspInvalidBindingTargetError(target=name, why='Cannot unbind predefined')
 
@@ -132,10 +126,10 @@ class Scope:
         if (identifier := self._bindings.get(name, NOT_FOUND)) is not NOT_FOUND:
             return identifier.value
 
-        if (value := getattr(self._builtins, name, NOT_FOUND)) is not NOT_FOUND:
-            return value
-
         if self._outer is not None:
             return self._outer._get_value(name)
+
+        if (value := getattr(self._builtins, name, NOT_FOUND)) is not NOT_FOUND:
+            return value
 
         raise SpspNameError(name)
