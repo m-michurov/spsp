@@ -198,8 +198,6 @@ class Tokenizer:
 
         return comment
 
-    # TODO escape sequences
-    # TODO non-printable characters inside string literals
     def _read_string_literal(self, quote: Literal[SpecialSymbols.SingleQuote, SpecialSymbols.DoubleQuote]) -> str:
         string = ''
 
