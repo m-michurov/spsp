@@ -5,10 +5,8 @@ __all__ = [
     'SpspBaseError',
     'SpspSyntaxError',
     'SpspNameError',
-    'SpspAttributeError',
     'SpspInvalidBindingError',
     'SpspInvalidKeywordUsageError',
-    'SpspTypeError',
     'SpspValueError',
     'SpspArityError',
     'SpspInvalidBindingTargetError'
@@ -41,17 +39,6 @@ class SpspNameError(SpspBaseError):
     This is an evaluation time error.
     """
     name: str
-
-
-@dataclass(frozen=True)
-class SpspAttributeError(SpspBaseError):
-    obj: Any
-    attribute: str
-
-
-@dataclass(frozen=True)
-class SpspTypeError(SpspBaseError):
-    why: str
 
 
 @dataclass(frozen=True)
