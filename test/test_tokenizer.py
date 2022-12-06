@@ -3,7 +3,8 @@ from typing import Type
 
 import pytest
 
-from spsp import Tokenizer, Token, SpspSyntaxError
+from spsp import Tokenizer, Token
+from spsp.errors import SpspSyntaxError
 
 
 # noinspection DuplicatedCode
@@ -329,7 +330,6 @@ class TestTokenizer:
 
             # Assert
             assert syntax_error.value.position == expected_error_position
-
 
     @pytest.mark.parametrize(
         'input_string, expected',
