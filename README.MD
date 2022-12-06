@@ -213,7 +213,7 @@ range(0, 10)
 ```
 **Variadic functions**
 ```lisp
->>> >>> (let int* (lambda [& *args] (list (map int *args))))
+>>> (let int* (lambda [& *args] (list (map int *args))))
 <spsp.evaluation.Function object at 0x000001A7887A6E00>
 >>> (int* '1' '2' '42')
 [1, 2, 42]
