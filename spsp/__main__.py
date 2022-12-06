@@ -5,7 +5,6 @@ import sys
 from typing import Collection
 
 from . import Tokenizer
-from .errors import SpspBaseError
 from .evaluation import evaluate
 from .parser import parse
 from .scope import Scope
@@ -15,11 +14,18 @@ from .special_symbols import SpecialSymbols
 def read_line() -> str:
     prompt = '>>> '
     result = ''
+
     while True:
         line = input(prompt).rstrip()
-        result += line.strip(SpecialSymbols.Backslash)
 
-        if not line.endswith(SpecialSymbols.Backslash):
+        if (pos := line.find(SpecialSymbols.Semicolon)) >= 0:
+            line = line[:pos]
+
+        line = line.strip(SpecialSymbols.Backslash)
+        result += line
+
+        if result.count(SpecialSymbols.LeftParenthesis) <= result.count(SpecialSymbols.RightParenthesis) \
+                and result.count(SpecialSymbols.LeftSquareBracket) <= result.count(SpecialSymbols.RightSquareBracket):
             return result
 
         prompt = '... '
@@ -33,7 +39,7 @@ def run_repl() -> None:
             try:
                 for expression in parse(Tokenizer(input_stream)):
                     print(evaluate(expression, scope))
-            except SpspBaseError as e:
+            except Exception as e:
                 print(f'{type(e).__name__}: {e}')
 
 

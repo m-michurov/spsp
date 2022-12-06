@@ -1,0 +1,18 @@
+(let import-from
+    (macro [module-name identifiers]
+        (do
+            (let module (import-module module-name::name))
+            (let items (tuple (map (lambda [ident] (getattr module ident::name)) identifiers::items)))
+            (expr!
+                (let
+                    (inline! identifiers)
+                    (inline-value! items))))))
+
+
+; Import functions 'reduce' and 'partial' from python module 'functools'
+(import-from functools [reduce partial])
+
+(let inc (partial + 1))
+(let one-to-ten (map inc (range 10)))
+
+(print (reduce + one-to-ten 0))
