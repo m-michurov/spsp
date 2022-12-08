@@ -46,13 +46,6 @@ class Scope:
 
     _outer: Scope | None = None
 
-    def _copy(self) -> Scope:
-        return Scope(
-            _bindings=self._bindings.copy(),
-            _module_cache=self._module_cache.copy(),
-            _outer=self._outer
-        )
-
     @property
     @cache
     def _builtins(self) -> ModuleType:
