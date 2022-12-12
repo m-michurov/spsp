@@ -105,16 +105,19 @@ def run_files(file_names: Collection[str], scope: Scope) -> bool:
                 return False
     return True
 
+
 def _main(args: list[str]) -> None:
     scope = Scope.empty()
     if len(args) <= 1:
         return run_repl(scope)
 
     if args[-1] != '--repl':
-        return run_files(args[1:], scope)
+        run_files(args[1:], scope)
+        return 
 
     if not run_files(args[1:-1], scope):
         return
     return run_repl(scope)
+
 
 _main(sys.argv)
