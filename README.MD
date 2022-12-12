@@ -18,6 +18,12 @@ $> python -m spsp file1.spsp file2.spsp ...
 ```
 Files will be executed in order within same global scope.
 
+Run REPL after loading `.spsp` files by adding --repl in the end:
+```bash
+$> python -m spsp std-lib.spsp --repl
+```
+Run standard library `std-lib.spsp` before any of your files/REPL if you need more than just basic syntax.
+
 ## Features
 
 ### Symbolic expressions

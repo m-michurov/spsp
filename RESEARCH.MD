@@ -179,8 +179,7 @@ None
 ```
 Правила определения истинности объекта такие же как в Python.
 
-Логические связки `and` ([определение](std-lib.spsp#L31-L42)), `or` ([определение](std-lib.spsp#L44-L55))
-и `no` ([определение](std-lib.spsp#L57)) реализованы через макросы. Они получаются ленивые, потому что 
+Логические связки `and` ([определение](std-lib.spsp#L31-L42)) и `or` ([определение](std-lib.spsp#L44-L55)) реализованы через макросы. Они получаются ленивые, потому что 
 макросы принимают аргументы без вычисления, а внутри аргументы вычисляются только если нужно.
 
 ```lisp
@@ -217,10 +216,10 @@ None
 Цикл `for` ([определение](std-lib.spsp#L83-L92)) реализован через макрос
 ```lisp
 (let for 
-	(macro [var coll body] 
-	    (do 
+    (macro [var coll body] 
+        (do 
             (let functools (import-module 'functools'))
-	        (let body-fn (eval! (expr! (lambda [(inline! var)] (inline! body)))))
+            (let body-fn (eval! (expr! (lambda [(inline! var)] (inline! body)))))
             (expr! 
                 ((inline-value! functools::reduce)
                     (lambda [a b] None) 
@@ -229,7 +228,7 @@ None
 ```
 
 Пример использования цикла:
-```
+```lisp
 >>> (let evens [])
 []
 >>> (for i (range 10)
