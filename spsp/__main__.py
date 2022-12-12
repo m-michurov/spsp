@@ -105,7 +105,7 @@ def run_files(file_names: Collection[str], scope: Scope) -> bool:
                 return False
     return True
 
-def _main(args: Collection[str]) -> None:
+def _main(args: list[str]) -> None:
     scope = Scope.empty()
     if len(args) <= 1:
         return run_repl(scope)
