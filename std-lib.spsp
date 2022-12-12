@@ -28,4 +28,49 @@
 (let not operator::not_)
 (let contains operator::contains)
 
+(let and
+    (macro [op1 & *rest]
+        (do
+            (let functools (import-module 'functools'))
+            (expr!
+                ((inline-value! functools::reduce)
+                    (lambda [result expr]
+                        (if result
+                            (bool (eval! expr))
+                            (bool result)))
+                    (inline-value! *rest)
+                    (bool (inline! op1)))))))
+                    
+(let or
+    (macro [op1 & *rest]
+        (do
+            (let functools (import-module 'functools'))
+            (expr!
+                ((inline-value! functools::reduce)
+                    (lambda [result expr]
+                        (if result
+                            result
+                            (eval! expr)))
+                    (inline-value! *rest)
+                    (inline! op1))))))
+
+(let not operator::not_)
+
+(let import
+    (macro [module-name]
+        (do
+            (let module (import-module module-name::name))
+            (expr!
+                (let (inline! module-name) (inline-value! module))))))
+
+(let import-from
+    (macro [module-name identifiers]
+        (do
+            (let module (import-module module-name::name))
+            (let items (tuple (map (lambda [ident] (getattr module ident::name)) identifiers::items)))
+            (expr!
+                (let
+                    (inline! identifiers)
+                    (inline-value! items))))))
+
 (del operator)
