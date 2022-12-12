@@ -30,8 +30,7 @@
 42
 ```
 
-С помощью макроса `def` 
-([std-lib.spsp](std-lib.spsp#L59)) 
+С помощью макроса `def` ([определение](std-lib.spsp#L59-L64)) 
 можно определить функцию более привычным образом:
 ```lisp
 (def fib
@@ -142,7 +141,7 @@ namespace()
 ```
 
 Для удобства, `import-module` может быть обернуто в макрос
-`import` ([examples/macro-import.spsp](examples/macro-import.spsp)):
+`import` ([определение](std-lib.spsp#L66-L71)):
 ```lisp
 (import functools)
 
@@ -151,7 +150,7 @@ namespace()
 ```
 
 Есть еще `import-from` 
-([examples/macro-import-from.spsp](examples/macro-import-from.spsp)):
+([определение](std-lib.spsp#L73-L81)):
 ```lisp
 (import-from functools [reduce partial])
 
@@ -180,11 +179,11 @@ None
 ```
 Правила определения истинности объекта такие же как в Python.
 
-Логические связки реализованы через макросы. Они получаются ленивые,
-потому что макросы принимают аргументы без вычисления, а внутри аргументы
-вычисляются только если нужно.
+Логические связки `and` ([определение](std-lib.spsp#L31-L42)), `or` ([определение](std-lib.spsp#L44-L55))
+и `no` ([определение](std-lib.spsp#L57)) реализованы через макросы. Они получаются ленивые, потому что 
+макросы принимают аргументы без вычисления, а внутри аргументы вычисляются только если нужно.
 
-```
+```lisp
 (let and
     (macro [op1 & *rest]
         (do
@@ -215,7 +214,7 @@ None
 
 ## Цикл либо оптимизированная хвостовая рекурсия
 
-Цикл for реализован через макрос
+Цикл `for` ([определение](std-lib.spsp#L83-L92)) реализован через макрос
 ```lisp
 (let for 
 	(macro [var coll body] 
@@ -227,7 +226,10 @@ None
                     (lambda [a b] None) 
                     (map (inline-value! body-fn) (inline! coll))
                     None)))))
+```
 
+Пример использования цикла:
+```
 >>> (let evens [])
 []
 >>> (for i (range 10)
