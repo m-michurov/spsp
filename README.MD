@@ -18,7 +18,7 @@ $> python -m spsp file1.spsp file2.spsp ...
 ```
 Files will be executed in order within same global scope.
 
-Run REPL after loading `.spsp` files by adding --repl in the end:
+Run REPL after loading `.spsp` files by adding `--repl` in the end:
 ```bash
 $> python -m spsp std-lib.spsp --repl
 ```
