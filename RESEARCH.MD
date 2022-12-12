@@ -31,7 +31,7 @@
 ```
 
 С помощью макроса `def` 
-([examples/macro-def.spsp](examples/macro-def.spsp)) 
+([std-lib.spsp](std-lib.spsp#L59)) 
 можно определить функцию более привычным образом:
 ```lisp
 (def fib
@@ -180,15 +180,63 @@ None
 ```
 Правила определения истинности объекта такие же как в Python.
 
-**[TODO]** Логические связки будут реализованы через макросы.
+Логические связки реализованы через макросы. Они получаются ленивые,
+потому что макросы принимают аргументы без вычисления, а внутри аргументы
+вычисляются только если нужно.
+
+```
+(let and
+    (macro [op1 & *rest]
+        (do
+            (let functools (import-module 'functools'))
+            (expr!
+                ((inline-value! functools::reduce)
+                    (lambda [result expr]
+                        (if result
+                            (bool (eval! expr))
+                            (bool result)))
+                    (inline-value! *rest)
+                    (bool (inline! op1)))))))
+```
+
+Пример с конъюнкцией:
+```lisp
+>>> (print
+...     'Result:'
+...     (and
+...         (do (print 'Evaluated op #1:' 1) 1)
+...         (do (print 'Evaluated op #2:' False) False)
+...         (do (print 'Evaluated op #3:' [1 2 3]) [1 2 3])))
+Evaluated op #1: 1
+Evaluated op #2: False
+Result: False
+None
+```
 
 ## Цикл либо оптимизированная хвостовая рекурсия
 
-**[TODO]** Цикл может быть реализован через макрос.
-В [macro-for.spsp](examples/macro-for.spsp) есть пример,
-как это могло бы выглядеть, но необходимость создавать список
-по числу итераций - как-то не очень, поэтому в итоге оно будет 
-выглядеть и работать получше.
+Цикл for реализован через макрос
+```lisp
+(let for 
+	(macro [var coll body] 
+	    (do 
+            (let functools (import-module 'functools'))
+	        (let body-fn (eval! (expr! (lambda [(inline! var)] (inline! body)))))
+            (expr! 
+                ((inline-value! functools::reduce)
+                    (lambda [a b] None) 
+                    (map (inline-value! body-fn) (inline! coll))
+                    None)))))
+
+>>> (let evens [])
+[]
+>>> (for i (range 10)
+...     (when (= 0 (% i 2))
+...         (evens::append i)))
+None
+>>> evens
+[0, 2, 4, 6, 8]
+```
 
 ## Присваивание для символов в определении let (императивный Lisp), либо для отдельного примитива, аналогичного atom в Clojure (чисто функциональный Lisp)
 
