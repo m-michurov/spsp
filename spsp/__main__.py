@@ -42,7 +42,7 @@ def find_line(input_stream: TextIO, position: int) -> (str, int, int):
     for line in input_stream:
         read += len(line)
 
-        if read >= position:
+        if read > position:
             line_start = read - len(line)
             break
 
