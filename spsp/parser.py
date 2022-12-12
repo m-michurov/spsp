@@ -38,7 +38,7 @@ def _parse(
 
         match token:
             case Token.RightParenthesis() | Token.RightSquareBracket():
-                raise SpspSyntaxError(token.position, f'Unexpected {token}')
+                raise SpspSyntaxError(token.position, f'Unexpected {type(token).__name__}')
             case Token.Literal(_, value):
                 yield Expression.Literal(token.position, value)
             case Token.Identifier(_, name):

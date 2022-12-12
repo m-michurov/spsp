@@ -9,7 +9,8 @@ __all__ = [
     'SpspInvalidKeywordUsageError',
     'SpspValueError',
     'SpspArityError',
-    'SpspInvalidBindingTargetError'
+    'SpspInvalidBindingTargetError',
+    'SpspEvaluationError'
 ]
 
 
@@ -102,3 +103,9 @@ class SpspArityError(SpspBaseError):
 @dataclass(frozen=True)
 class SpspInvalidKeywordUsageError(SpspBaseError):
     pass
+
+
+@dataclass(frozen=True)
+class SpspEvaluationError(SpspBaseError):
+    cause: Exception
+    position: int

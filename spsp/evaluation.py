@@ -10,7 +10,9 @@ from .attribute_utility import (
 from .errors import (
     SpspArityError,
     SpspInvalidBindingTargetError,
-    SpspValueError, SpspInvalidBindingError
+    SpspValueError,
+    SpspInvalidBindingError,
+    SpspEvaluationError
 )
 from .keywords import Keyword
 from .scope import Scope
@@ -120,7 +122,12 @@ def evaluate(
     if (_evaluate := evaluators.get(type(expression), NOT_FOUND)) is NOT_FOUND:
         raise NotImplementedError(type(expression))
 
-    return _evaluate(expression, scope)
+    try:
+        return _evaluate(expression, scope)
+    except SpspEvaluationError:
+        raise
+    except Exception as e:
+        raise SpspEvaluationError(e, expression.position)
 
 
 @evaluation_rule(Expression.Literal)
