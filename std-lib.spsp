@@ -73,4 +73,22 @@
                     (inline! identifiers)
                     (inline-value! items))))))
 
+(let for 
+	(macro [var coll body] 
+	    (do 
+            (let functools (import-module 'functools'))
+	        (let body-fn (eval! (expr! (lambda [(inline! var)] (inline! body)))))
+            (expr! 
+                ((inline-value! functools::reduce)
+                    (lambda [a b] None) 
+                    (map (inline-value! body-fn) (inline! coll))
+                    None)))))
+
+(let when
+	(macro [cond body]
+		(expr!
+			(if (inline! cond)
+				(inline! body)
+				None))))
+
 (del operator)
