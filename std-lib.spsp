@@ -56,6 +56,13 @@
 
 (let not operator::not_)
 
+(let def 
+    (macro [name args body]
+        (expr! 
+            (let 
+                (inline! name)
+                (lambda (inline! args) (inline! body))))))
+
 (let import
     (macro [module-name]
         (do
