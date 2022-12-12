@@ -158,9 +158,17 @@ def _symbolic_expression(expression: Expression.Symbolic, scope: Scope) -> Any:
 
     operation = evaluate(expression.operation, scope)
 
-    if isinstance(operation, Macro):
-        generated = operation(*expression.arguments)
-        return evaluate(generated, scope)
+    try:
+        if isinstance(operation, Macro):
+            generated = operation(*expression.arguments)
+            return evaluate(generated, scope)
+
+        if isinstance(operation, Function):
+            arguments = (evaluate(it, scope) for it in expression.arguments)
+            return operation(*arguments)
+
+    except SpspEvaluationError as e:
+        raise SpspEvaluationError(e.cause, expression.position)
 
     arguments = (evaluate(it, scope) for it in expression.arguments)
     return operation(*arguments)
