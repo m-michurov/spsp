@@ -30,7 +30,7 @@
 42
 ```
 
-С помощью макроса `def` ([определение](std-lib.spsp#L59-L64)) 
+С помощью макроса `def` ([определение](std-lib.spsp#L58-L63)) 
 можно определить функцию более привычным образом:
 ```lisp
 (def fib
@@ -141,7 +141,7 @@ namespace()
 ```
 
 Для удобства, `import-module` может быть обернуто в макрос
-`import` ([определение](std-lib.spsp#L66-L71)):
+`import` ([определение](std-lib.spsp#L65-L70)):
 ```lisp
 (import functools)
 
@@ -150,7 +150,7 @@ namespace()
 ```
 
 Есть еще `import-from` 
-([определение](std-lib.spsp#L73-L81)):
+([определение](std-lib.spsp#L72-L80)):
 ```lisp
 (import-from functools [reduce partial])
 
@@ -179,7 +179,7 @@ None
 ```
 Правила определения истинности объекта такие же как в Python.
 
-Логические связки `and` ([определение](std-lib.spsp#L31-L42)) и `or` ([определение](std-lib.spsp#L44-L55)) реализованы через макросы. Они получаются ленивые, потому что 
+Логические связки `and` ([определение](std-lib.spsp#L32-L43)) и `or` ([определение](std-lib.spsp#L45-L56)) реализованы через макросы. Они получаются ленивые, потому что 
 макросы принимают аргументы без вычисления, а внутри аргументы вычисляются только если нужно.
 
 ```lisp
@@ -213,7 +213,7 @@ None
 
 ## Цикл либо оптимизированная хвостовая рекурсия
 
-Цикл `for` ([определение](std-lib.spsp#L83-L92)) реализован через макрос
+Цикл `for` ([определение](std-lib.spsp#L82-L91)) реализован через макрос
 ```lisp
 (let for 
     (macro [var coll body] 
@@ -317,7 +317,62 @@ None
 
 ## Генерация и обработка исключений (совместимых с исключениями платформы исполнения)
 
-**[TODO]**
+Ключевое слово `raise` используется для генерации исключений.
+
+Пример:
+```lisp
+>>> (let n -1)
+-1
+>>> (when (< n 0) (raise (ValueError "Число n должно быть положительным")))
+File "<stdin>", line 1
+(when (< n 0) (raise (ValueError "Число n должно быть положительным")))
+^
+ValueError: Число n должно быть положительным
+```
+
+Конструкция `try` используется для обработки исключений. Она 
+реализована через макрос:
+```lisp
+(let try
+    (macro [body handler & finally]
+        (do
+            (when (!= (getattr (first handler) "name") "except")
+                (raise (ValueError 'Exception handler should start with "except"')))
+            (let finally
+                (if finally
+                    (first finally)
+                    (expr! (finally None))))
+            (when (!= (getattr (first finally) "name") "finally")
+                (raise (ValueError 'Finally statement should start with "finally"')))
+            (let exception-identifier (second handler))
+            (expr!
+                (run-catching
+                    (lambda [] (inline! body))
+                    (lambda [(inline! exception-identifier)] (inline! (last handler)))
+                    (lambda [] (inline! (second finally))))))))
+```
+
+Для реализации `try` была написана встроенная в интерпретатор
+функция `run-catching`.
+Она принимает функцию (`body`), которая может выбросить исключение, 
+функцию-обработчик (`handler`) и функцию (`finally`), вызывающуюся в конце.
+
+Пример:
+```lisp
+>>> (try (/ 10 0)
+...      (except ex (print ex))
+...      (finally (print "Finally")))
+division by zero
+Finally
+None
+```
+
+`try` можно использовать и без `finally`, например:
+```lisp
+>>> (try (/ 10 0)
+...      (except _ 0))
+0
+```
 
 ## Для чисто-функционального Lisp
 

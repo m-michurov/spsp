@@ -30,3 +30,7 @@ class Keyword(str, Enum):
     InlineLiteral = 'inline-value!'
 
     VariadicMarker = '&'
+
+    Raise = 'raise'
+
+    RunCatching = 'run-catching'

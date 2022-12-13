@@ -23,6 +23,7 @@
 (let > operator::gt)
 (let >= operator::ge)
 (let = operator::eq)
+(let != operator::ne)
 (let is operator::is_)
 (let is-not operator::is_not)
 (let not operator::not_)
@@ -53,8 +54,6 @@
                             (eval! expr)))
                     (inline-value! *rest)
                     (inline! op1))))))
-
-(let not operator::not_)
 
 (let def 
     (macro [name args body]
@@ -97,5 +96,23 @@
 			(if (inline! cond)
 				(inline! body)
 				None))))
+
+(let try
+    (macro [body handler & finally]
+        (do
+            (when (!= (getattr (first handler) "name") "except")
+                (raise (ValueError 'Exception handler should start with "except"')))
+            (let finally
+                (if finally
+                    (first finally)
+                    (expr! (finally None))))
+            (when (!= (getattr (first finally) "name") "finally")
+                (raise (ValueError 'Finally statement should start with "finally"')))
+            (let exception-identifier (second handler))
+            (expr!
+                (run-catching
+                    (lambda [] (inline! body))
+                    (lambda [(inline! exception-identifier)] (inline! (last handler)))
+                    (lambda [] (inline! (second finally))))))))
 
 (del operator)
