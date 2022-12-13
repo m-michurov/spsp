@@ -1,9 +1,12 @@
 import importlib
-import operator
-from functools import reduce
 from typing import Mapping, Callable, Any
 
 from .keywords import Keyword
+
+from .errors import (
+    SpspValueError,
+    SpspEvaluationError
+)
 
 __all__ = [
     'predefined'
@@ -32,9 +35,31 @@ def define(
 
     return decorate
 
+
 define(Keyword.ImportModule, importlib.import_module)
 
 define('call', lambda fn, args: fn(*args))
 define('doc', lambda obj: obj.__doc__)
 
 define('predefined', lambda: list(map(str, predefined())))
+
+
+@define(Keyword.Raise)
+def _raise(ex: Exception) -> None:
+    if not isinstance(ex, Exception):
+        raise SpspValueError(f'"{Keyword.Raise}" expected {Exception.__name__}')
+
+    raise ex
+
+
+@define(Keyword.RunCatching)
+def _run_catching(
+        body: Callable[[], Any],
+        handler: Callable[[Exception], Any],
+        _finally: Callable[[], None]) -> Any:
+    try:
+        return body()
+    except SpspEvaluationError as ex:
+        return handler(ex.cause)
+    finally:
+        _finally()
