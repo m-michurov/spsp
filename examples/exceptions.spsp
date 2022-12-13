@@ -1,0 +1,11 @@
+;; Example with try with finally
+(try
+    (/ 10 0)
+    (except ex (print ex))
+    (finally (print "Finally")))
+
+;; Example with try without finally
+(print
+    (try
+        (raise (ValueError "Something went wrong"))
+        (except _ 0)))
