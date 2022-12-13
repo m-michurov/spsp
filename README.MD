@@ -271,14 +271,6 @@ Lambda [x]
 
 ## Predefined identifiers
 
-Call `predefined` to get a list of all predefined identifiers
-not including special forms.
-
-```lisp
->>> (predefined)
-['+', '-', '*', '/', '//', '**', '%', 'import-module', 'first', 'rest', 'call', 'doc', '<', '<=', '>', '>=', '=', 'is', 'is-not', 'not', 'contains', 'predefined', 'set', 'get']
-```
-
 *List of existing predefined identifiers coming soon*
 
 ## Examples
