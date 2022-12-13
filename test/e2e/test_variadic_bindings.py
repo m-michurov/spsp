@@ -1,9 +1,10 @@
 import io
+from typing import Any
 
 import pytest
 
 from spsp import parse, Tokenizer, Scope, evaluate
-from spsp.errors import SpspInvalidBindingError
+from spsp.errors import SpspEvaluationError
 
 
 # noinspection DuplicatedCode
@@ -62,12 +63,13 @@ class TestVariadicBindings:
             scope = Scope.empty()
 
             # Act
-            with pytest.raises(SpspInvalidBindingError) as bind_error:
+            with pytest.raises(SpspEvaluationError) as evaluation_error:
                 for e in expressions:
                     evaluate(e, scope)
 
             # Assert
-            assert 'not enough values' in bind_error.value.why.lower()
+            cause: Any = evaluation_error.value.cause
+            assert 'not enough values' in cause.why.lower()
 
     def test_bind_to_collection_nested(self) -> None:
         # Arrange
@@ -95,10 +97,13 @@ class TestVariadicBindings:
             expressions = list(parse(Tokenizer(input_stream)))
             scope = Scope.empty()
 
-            # Act & Assert
-            with pytest.raises(TypeError):
+            # Act
+            with pytest.raises(SpspEvaluationError) as evaluation_error:
                 for e in expressions:
                     evaluate(e, scope)
+
+            # Assert
+            assert isinstance(evaluation_error.value.cause, TypeError)
 
     def test_variadic_macro(self) -> None:
         # Arrange
