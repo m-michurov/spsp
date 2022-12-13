@@ -202,7 +202,7 @@ def bind_structural(
     targets = target_expression.items[:-2] if variadic else target_expression.items
 
     if len(targets) > len(values):
-        raise SpspInvalidBindingError(f'Not enough values to unpack (expected {len(target_expression.items)})')
+        raise SpspInvalidBindingError(f'Not enough values to unpack (expected {len(targets)})')
 
     if len(targets) < len(values) and not variadic:
         raise SpspInvalidBindingError(f'Too many values to unpack (expected {len(target_expression.items)})')
