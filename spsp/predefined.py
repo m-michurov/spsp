@@ -32,55 +32,9 @@ def define(
 
     return decorate
 
-
-@define('+')
-def _plus(arg0: Any, *args) -> Any:
-    if not args:
-        return operator.pos(arg0)
-
-    return reduce(
-        operator.add,
-        args,
-        arg0
-    )
-
-
-@define('-')
-def _minus(arg0: Any, *args) -> Any:
-    if not args:
-        return operator.neg(arg0)
-
-    return reduce(
-        operator.sub,
-        args,
-        arg0
-    )
-
-
-define('*', operator.mul)
-define('/', operator.truediv)
-define('//', operator.floordiv)
-define('**', operator.pow)
-define('%', operator.mod)
-
 define(Keyword.ImportModule, importlib.import_module)
 
-define('first', lambda it: it[0])
-define('rest', lambda it: it[1:])
 define('call', lambda fn, args: fn(*args))
 define('doc', lambda obj: obj.__doc__)
 
-define('<', operator.lt)
-define('<=', operator.le)
-define('>', operator.gt)
-define('>=', operator.ge)
-define('=', operator.eq)
-define('is', operator.is_)
-define('is-not', operator.is_not)
-define('not', operator.not_)
-define('contains', operator.contains)
-
 define('predefined', lambda: list(map(str, predefined())))
-
-define('set', lambda obj, item, val: obj.__setitem__(item, val))
-define('get', lambda obj, item: obj.__getitem__(item))

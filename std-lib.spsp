@@ -1,0 +1,101 @@
+(let operator (import-module 'operator'))
+
+(let + operator::add)
+(let - operator::sub)
+(let pos operator::pos)
+(let neg operator::neg)
+(let * operator::mul)
+(let / operator::truediv)
+(let // operator::floordiv)
+(let ** operator::pow)
+(let % operator::mod)
+
+(let get (lambda [obj item] (obj::__getitem__ item)))
+(let set (lambda [obj item value] (obj::__setitem__ item value)))
+
+(let first (lambda [coll] (get coll 0)))
+(let second (lambda [coll] (get coll 1)))
+(let last (lambda [coll] (get coll -1)))
+(let rest (lambda [coll] (get coll (slice 1, None))))
+
+(let < operator::lt)
+(let <= operator::le)
+(let > operator::gt)
+(let >= operator::ge)
+(let = operator::eq)
+(let is operator::is_)
+(let is-not operator::is_not)
+(let not operator::not_)
+(let contains operator::contains)
+
+(let and
+    (macro [op1 & *rest]
+        (do
+            (let functools (import-module 'functools'))
+            (expr!
+                ((inline-value! functools::reduce)
+                    (lambda [result expr]
+                        (if result
+                            (bool (eval! expr))
+                            (bool result)))
+                    (inline-value! *rest)
+                    (bool (inline! op1)))))))
+                    
+(let or
+    (macro [op1 & *rest]
+        (do
+            (let functools (import-module 'functools'))
+            (expr!
+                ((inline-value! functools::reduce)
+                    (lambda [result expr]
+                        (if result
+                            result
+                            (eval! expr)))
+                    (inline-value! *rest)
+                    (inline! op1))))))
+
+(let not operator::not_)
+
+(let def 
+    (macro [name args body]
+        (expr! 
+            (let 
+                (inline! name)
+                (lambda (inline! args) (inline! body))))))
+
+(let import
+    (macro [module-name]
+        (do
+            (let module (import-module module-name::name))
+            (expr!
+                (let (inline! module-name) (inline-value! module))))))
+
+(let import-from
+    (macro [module-name identifiers]
+        (do
+            (let module (import-module module-name::name))
+            (let items (tuple (map (lambda [ident] (getattr module ident::name)) identifiers::items)))
+            (expr!
+                (let
+                    (inline! identifiers)
+                    (inline-value! items))))))
+
+(let for 
+	(macro [var coll body] 
+	    (do 
+            (let functools (import-module 'functools'))
+	        (let body-fn (eval! (expr! (lambda [(inline! var)] (inline! body)))))
+            (expr! 
+                ((inline-value! functools::reduce)
+                    (lambda [a b] None) 
+                    (map (inline-value! body-fn) (inline! coll))
+                    None)))))
+
+(let when
+	(macro [cond body]
+		(expr!
+			(if (inline! cond)
+				(inline! body)
+				None))))
+
+(del operator)

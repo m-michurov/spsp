@@ -84,9 +84,7 @@ def print_error_message(
     input_stream.seek(initial_pos)
 
 
-def run_repl() -> None:
-    scope = Scope.empty()
-
+def run_repl(scope: Scope) -> None:
     while True:
         with io.StringIO(read_line()) as input_stream:
             try:
@@ -96,9 +94,7 @@ def run_repl() -> None:
                 print_error_message(input_stream, '<stdin>', e, stream=sys.stdout)
 
 
-def run_files(file_names: Collection[str]) -> None:
-    scope = Scope.empty()
-
+def run_files(file_names: Collection[str], scope: Scope) -> bool:
     for file_name in file_names:
         with open(file_name, mode='rt', encoding='utf-8') as file:
             try:
@@ -106,14 +102,22 @@ def run_files(file_names: Collection[str]) -> None:
                     evaluate(expression, scope)
             except (SpspEvaluationError, SpspSyntaxError) as e:
                 print_error_message(file, file_name, e)
-                break
+                return False
+    return True
 
 
-def _main(args: Collection[str]) -> None:
+def _main(args: list[str]) -> None:
+    scope = Scope.empty()
     if len(args) <= 1:
-        return run_repl()
+        return run_repl(scope)
 
-    return run_files(args[1:])
+    if args[-1] != '--repl':
+        run_files(args[1:], scope)
+        return 
+
+    if not run_files(args[1:-1], scope):
+        return
+    return run_repl(scope)
 
 
 _main(sys.argv)
