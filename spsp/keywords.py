@@ -34,3 +34,5 @@ class Keyword(str, Enum):
     Raise = 'raise'
 
     RunCatching = 'run-catching'
+
+    MakeLazy = 'make-lazy'

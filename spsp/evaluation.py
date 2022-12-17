@@ -15,6 +15,7 @@ from .errors import (
     SpspEvaluationError
 )
 from .keywords import Keyword
+from .lazy import Lazy
 from .scope import Scope
 
 __all__ = [
@@ -171,6 +172,8 @@ def _symbolic_expression(expression: Expression.Symbolic, scope: Scope) -> Any:
         raise SpspEvaluationError(e.cause, expression.position)
 
     arguments = (evaluate(it, scope) for it in expression.arguments)
+    arguments = ((it.value if isinstance(it, Lazy) else it) for it in arguments)
+
     return operation(*arguments)
 
 

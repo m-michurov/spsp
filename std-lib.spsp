@@ -115,4 +115,9 @@
                     (lambda [(inline! exception-identifier)] (inline! (last handler)))
                     (lambda [] (inline! (second finally))))))))
 
+(let lazy
+	(macro [body]
+		(expr!
+			(make-lazy (lambda [] (inline! body))))))
+
 (del operator)

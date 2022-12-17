@@ -383,7 +383,79 @@ None
 
 ### Отложенный порядок вычислений для вызовов функций
 
-**[TODO]**
+Отложенный порядок вычисления можно использовать с помощью ключевого
+слова `lazy`. Класс `Lazy` хранит значение выражения и функцию, 
+которая будет вычислена при первом обращении:
+```py
+@dataclass
+class Lazy:
+    _eval: Callable[[], Any]
+    _value: Any = NOT_EVALUATED
+
+    @property
+    def value(self) -> Any:
+        if self._value is not NOT_EVALUATED:
+            return self._value
+
+        self._value = self._eval()
+        return self._value
+```
+
+`lazy` реализована через макрос:
+```lisp
+(let lazy
+	(macro [body]
+		(expr!
+			(make-lazy (lambda [] (inline! body))))))
+```
+
+`make-lazy` просто возвращает объект типа `Lazy`:
+```py
+@define(Keyword.MakeLazy)
+def _make_lazy(
+        body: Callable[[], Any]) -> Any:
+    return Lazy(body)
+```
+
+Когда дело доходит до вычисления символических выражений
+все объекты типа `Lazy` заменяются на их значения:
+```py
+arguments = (evaluate(it, scope) for it in expression.arguments)
+arguments = ((it.value if isinstance(it, Lazy) else it) for it in arguments)
+
+return operation(*arguments)
+```
+
+Пример:
+```lisp
+>>> (def use [x]                                              
+...   (do               
+...     (print 'text before calculation')
+...     (print (+ 1 x))))
+<spsp.evaluation.Function object at 0x000001C590DF9290>
+>>> (let y (lazy (do (import time) (print 'hard function') (time::sleep 5) 41)))
+Lazy(_eval=<spsp.evaluation.Function object at 0x000001C590DFA150>, _value=<object object at 0x000001C5904D49C0>)
+>>> (use y)
+text before calculation
+hard function
+42
+None
+>>>
+```
+
+При повторном обращении к переменной, она не будет вычисляться заного:
+```lisp
+>>> (use y)
+text before calculation
+hard function
+42
+None
+>>> (use y)
+text before calculation
+42
+None
+>>>
+```
 
 ## Динамические лексические контексты (по аналогии с binding в Clojure)
 
