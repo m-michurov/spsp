@@ -175,7 +175,7 @@ def _symbolic_expression(expression: Expression.Symbolic, scope: Scope) -> Any:
     except SpspEvaluationError as e:
         raise SpspEvaluationError(e.cause, expression.position)
 
-    arguments = (evaluate(it, scope,force_eval_lazy=True) for it in expression.arguments)
+    arguments = (evaluate(it, scope, force_eval_lazy=True) for it in expression.arguments)
 
     return operation(*arguments)
 
