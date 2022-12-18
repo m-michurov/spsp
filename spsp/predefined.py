@@ -8,6 +8,8 @@ from .errors import (
     SpspEvaluationError
 )
 
+from .lazy import Lazy
+
 __all__ = [
     'predefined'
 ]
@@ -63,3 +65,8 @@ def _run_catching(
         return handler(ex.cause)
     finally:
         _finally()
+
+
+@define(Keyword.MakeLazy)
+def _make_lazy(body: Callable[[], Any]) -> Any:
+    return Lazy(body)

@@ -15,6 +15,7 @@ from .errors import (
     SpspEvaluationError
 )
 from .keywords import Keyword
+from .lazy import Lazy
 from .scope import Scope
 
 __all__ = [
@@ -117,13 +118,17 @@ NOT_FOUND = object()
 
 def evaluate(
         expression: Expression.AnyExpression,
-        scope: Scope
+        scope: Scope,
+        force_eval_lazy: bool = False
 ) -> Any:
     if (_evaluate := evaluators.get(type(expression), NOT_FOUND)) is NOT_FOUND:
         raise NotImplementedError(type(expression))
 
     try:
-        return _evaluate(expression, scope)
+        result = _evaluate(expression, scope)
+        if isinstance(result, Lazy) and force_eval_lazy:
+            return result.value
+        return result
     except SpspEvaluationError:
         raise
     except Exception as e:
@@ -156,7 +161,7 @@ def _symbolic_expression(expression: Expression.Symbolic, scope: Scope) -> Any:
             and (evaluate_special := special_forms.get(expression.operation.name, NOT_FOUND)) is not NOT_FOUND:
         return evaluate_special(expression.arguments, scope)
 
-    operation = evaluate(expression.operation, scope)
+    operation = evaluate(expression.operation, scope, force_eval_lazy=True)
 
     try:
         if isinstance(operation, Macro):
@@ -170,7 +175,8 @@ def _symbolic_expression(expression: Expression.Symbolic, scope: Scope) -> Any:
     except SpspEvaluationError as e:
         raise SpspEvaluationError(e.cause, expression.position)
 
-    arguments = (evaluate(it, scope) for it in expression.arguments)
+    arguments = (evaluate(it, scope, force_eval_lazy=True) for it in expression.arguments)
+
     return operation(*arguments)
 
 
@@ -178,7 +184,7 @@ def _symbolic_expression(expression: Expression.Symbolic, scope: Scope) -> Any:
 def _if(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
     condition, when_true, when_false = arguments
 
-    if evaluate(condition, scope):
+    if evaluate(condition, scope, force_eval_lazy=True):
         return evaluate(when_true, scope)
 
     return evaluate(when_false, scope)
