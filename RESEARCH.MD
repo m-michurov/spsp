@@ -449,13 +449,7 @@ def _make_lazy(
 ```
 
 Когда дело доходит до вычисления Pyhton-функций
-все аргументы типа `Lazy` заменяются на их значения:
-```py
-arguments = (evaluate(it, scope) for it in expression.arguments)
-arguments = ((it.value if isinstance(it, Lazy) else it) for it in arguments)
-
-return operation(*arguments)
-```
+все аргументы типа `Lazy` заменяются на их значения.
 
 Пример:
 ```lisp
