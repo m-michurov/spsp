@@ -68,6 +68,5 @@ def _run_catching(
 
 
 @define(Keyword.MakeLazy)
-def _make_lazy(
-        body: Callable[[], Any]) -> Any:
+def _make_lazy(body: Callable[[], Any]) -> Any:
     return Lazy(body)

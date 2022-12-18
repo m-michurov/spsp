@@ -1,11 +1,14 @@
 from dataclasses import dataclass
 from typing import Any, Callable
 
+__all__ = [
+    'Lazy'
+]
 
 NOT_EVALUATED = object()
 
 
-@dataclass
+@dataclass(repr=False)
 class Lazy:
     _eval: Callable[[], Any]
     _value: Any = NOT_EVALUATED
