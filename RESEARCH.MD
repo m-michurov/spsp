@@ -448,7 +448,7 @@ def _make_lazy(
     return Lazy(body)
 ```
 
-Когда дело доходит до вычисления Pyhton-функций
+Когда дело доходит до вычисления Pyhton-функций,
 все аргументы типа `Lazy` заменяются на их значения:
 ```py
 arguments = (evaluate(it, scope) for it in expression.arguments)
