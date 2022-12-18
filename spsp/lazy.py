@@ -16,4 +16,6 @@ class Lazy:
             return self._value
 
         self._value = self._eval()
+        if isinstance(self._value, Lazy):
+            return self._value.value
         return self._value
