@@ -57,7 +57,7 @@ class Arguments:
         self._target = target
 
     def bind(self, values: Collection[Any], mutable: bool, scope: Scope) -> None:
-        bind_structural(self._target, values, mutable, scope)
+        bind_structural(self._target, values, mutable, scope.bind)
 
 
 @dataclass(frozen=True, repr=False)
@@ -209,7 +209,7 @@ def bind_structural(
         target_expression: Expression.List,
         values: Collection[Any],
         mutable: bool,
-        scope: Scope
+        bind: Callable[[str, Any, bool], None]
 ) -> None:
     variadic, rest_identifier = is_variadic(target_expression)
 
@@ -223,25 +223,25 @@ def bind_structural(
 
     for target, value in zip(targets, values):
         if isinstance(target, Expression.Identifier):
-            scope.bind(target.name, value, mutable)
+            bind(target.name, value, mutable)
             continue
 
         if isinstance(target, Expression.AttributeAccess):
             set_attribute_value(
-                get_attribute_value(scope.value(target.name), target.attributes[:-1]),
+                get_attribute_value(value(target.name), target.attributes[:-1]),
                 target.attributes[-1],
                 value,
             )
             continue
 
         if isinstance(target, Expression.List):
-            bind_structural(target, value, mutable, scope)
+            bind_structural(target, value, mutable, bind)
             continue
 
         raise SpspInvalidBindingTargetError(target)
 
     if rest_identifier is not None:
-        scope.bind(
+        bind(
             rest_identifier.name,
             tuple(values[len(targets):]),
             mutable
@@ -268,7 +268,27 @@ def _let(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
 
     if isinstance(target, Expression.List):
         value = evaluate(value_expression, scope)
-        bind_structural(target, value, mutable=True, scope=scope)
+        bind_structural(target, value, mutable=True, bind=scope.bind)
+        return value
+
+    raise SpspInvalidBindingTargetError(target)
+
+
+@special_form(Keyword.Rebind, arity=2)
+def _rebind(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
+    target, value_expression = arguments
+
+    if isinstance(target, Expression.Identifier):
+        value = evaluate(value_expression, scope)
+        scope.rebind(target.name, value, mutable=True)
+        return value
+
+    if isinstance(target, Expression.AttributeAccess):
+        raise SpspInvalidBindingTargetError(target, f'Use "{Keyword.Let}" to change attribute values')
+
+    if isinstance(target, Expression.List):
+        value = evaluate(value_expression, scope)
+        bind_structural(target, value, mutable=True, bind=scope.rebind)
         return value
 
     raise SpspInvalidBindingTargetError(target)

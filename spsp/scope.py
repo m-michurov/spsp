@@ -68,6 +68,13 @@ class Scope:
     def let(self, name: str, value: Any) -> None:
         self._bind_name(name, value, binding_type=BindingType.Variable)
 
+    def rebind(self, name: str, value: Any, mutable: bool) -> None:
+        self._rebind_name(
+            name,
+            value,
+            binding_type=BindingType.Variable if mutable else BindingType.Constant
+        )
+
     def const(self, name: str, value: Any) -> None:
         self._bind_name(name, value, binding_type=BindingType.Constant)
 
@@ -105,6 +112,29 @@ class Scope:
             raise SpspInvalidBindingTargetError(target=name, why='Cannot rebind constant')
 
         self._bindings[name] = Binding(value, binding_type)
+
+    def _rebind_name(
+            self,
+            name: str,
+            value: Any,
+            binding_type: BindingType
+    ) -> None:
+        if name in Keyword.__members__.values():
+            raise SpspInvalidBindingTargetError(target=name, why='Cannot rebind to keyword')
+
+        if (existing := self._bindings.get(name, NOT_FOUND)) is NOT_FOUND:
+            if self._outer is not None:
+                return self._outer._rebind_name(name, value, binding_type)
+
+            if hasattr(self._builtins, name):
+                return self._bind_name(name, value, binding_type)
+
+            raise SpspInvalidBindingTargetError(target=name, why='Cannot rebind undefined')
+
+        if existing.type is BindingType.Constant:
+            raise SpspInvalidBindingTargetError(target=name, why='Cannot rebind constant')
+
+        self._bind_name(name, value, binding_type)
 
     def _unbind_value(self, name: str) -> None:
         if name in Keyword.__members__.values():

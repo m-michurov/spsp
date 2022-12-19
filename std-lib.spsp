@@ -120,4 +120,16 @@
 		(expr!
 			(make-lazy (lambda [] (inline! body))))))
 
+(let binding
+    (macro [vars values body]
+        (expr!
+            (do
+                (let _old-vars (inline! vars))
+                (try
+                    (do
+                        (rebind (inline! vars) (inline! values))
+                        (inline! body))
+                    (except e (raise e))
+                    (finally (rebind (inline! vars) _old-vars)))))))
+
 (del operator)
