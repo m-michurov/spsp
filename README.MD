@@ -228,6 +228,145 @@ range(0, 10)
 
 *See [short-circuit logical and example](examples/macro-short-circuit-and.spsp)*.
 
+### Exceptions
+
+Raise Python exceptions using `raise`:
+```lisp
+>>> (let n -1)
+-1  
+>>> (when (< n 0)
+...   (raise (ValueError 'Expected non-negative')))
+File "<stdin>", line 1
+(when (< n 0)         
+^                     
+ValueError: Expected non-negative
+```
+
+Catch exceptions using `try` macro.
+Syntax is as follows:
+```lisp
+; With 'finally'
+(try
+    <body>
+    (except <exception-binding> <except-body>)
+    (finally <finally-body>))
+    
+; Without 'finally'
+(try
+    <body>
+    (except <exception-binding> <except-body>))
+```
+`try` evaluates `<body>` in a local context and returns its value.
+If `<body>` throws an exception, result of `<except-body>` is returned
+instead. `finally`, if present, is always evaluated last.
+
+Example usage:
+```lisp
+>>> (try                                                  
+...   (/ 10 0)                     
+...   (except e (print (getattr (type e) '__name__') ':' e)))  
+ZeroDivisionError : division by zero
+None
+>>> (try
+...   (/ 10 0)
+...   (except _ -1)
+...   (finally (print 'finally')))
+finally
+-1
+```
+
+### Lazy evaluation and non-strict functions
+
+Python functions are always strict in all of their
+parameters, i.e. their 
+arguments are evaluated before the function is executed.
+Spsp functions, however, can be both strict and 
+non-strict in their arguments, depending on how 
+arguments are passed. 
+
+To delay evaluation, use `lazy` macro:
+```lisp
+>>> (let x 42) 
+42  
+>>> (let y (lazy (do (print "Calc y") (+ 1 x)))) 
+<spsp.lazy.Lazy object at 0x000001A0A2DF1090>
+>>> (let z (lazy (do (print "Calc z") (* 2 y)))) 
+<spsp.lazy.Lazy object at 0x000001A0A2DF1C50>
+>>> (let t (lazy (do (print "Calc t") (- z y)))) 
+<spsp.lazy.Lazy object at 0x000001A0A2DF2810>
+>>> (print t)  
+Calc t
+Calc z
+Calc y
+43    
+None 
+```
+
+Passing an argument as `lazy` in a function invocation
+will make the function behave as non-strict in that
+argument.
+
+Consider this definition of function `use`:
+```lisp
+>>> (def use [x]                              
+...     (do 
+...     (print 'Using provided value')
+...     (print (+ 1 x))))
+<spsp.evaluation.Function object at 0x000001AA3B528760>
+```
+`use` can behave as strict in `x`:
+```lisp
+>>> (use (do (print 'Evaluating') 41))                 
+Evaluating          
+Using provided value
+42                  
+None                
+```
+But can also behave as non-strict:
+```lisp
+>>> (use (lazy (do (print 'Evaluating') 41)))
+Using provided value
+Evaluating          
+42                  
+None                
+>>> 
+```
+`lazy`'s body is evaluated only once, value is cached:
+```lisp
+>>> (let x (lazy (do (print 'Evaluating') 41))) 
+<spsp.lazy.Lazy object at 0x000001AA3B52AA40>
+>>> (print x)                                   
+Evaluating
+41        
+None      
+>>> (print x)
+41  
+None
+```
+Nested `lazy` expressions behave as a single-level `lazy`:
+```lisp
+>>> (let x (lazy 42))
+<spsp.lazy.Lazy object at 0x000001AA3B52A4D0>
+>>> (let y (lazy (lazy x)))                  
+<spsp.lazy.Lazy object at 0x000001AA3B529CC0>
+>>> (print y)                                
+42  
+None
+```
+If a `lazy` is used as the first item in a
+symbolic expression, it is always evaluated:
+```lisp
+>>> (let plus (lazy (do (print '"plus"') +)))
+<spsp.lazy.Lazy object at 0x000001AA3B77C3D0>
+>>> (plus                                    
+...   (do (print 1) 1)
+...   (do (print 2) 2))
+"plus"
+1
+2
+3
+```
+
 ## Python interoperability
 
 Spsp is built upon Python runtime.
