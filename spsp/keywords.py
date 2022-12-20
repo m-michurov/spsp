@@ -9,6 +9,7 @@ class Keyword(str, Enum):
 
     Const = 'const'
     Let = 'let'
+    Rebind = 'rebind'
 
     If = 'if'
 

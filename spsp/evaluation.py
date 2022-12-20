@@ -248,6 +248,43 @@ def bind_structural(
         )
 
 
+def rebind_structural(
+        target_expression: Expression.List,
+        values: Collection[Any],
+        mutable: bool,
+        scope: Scope
+) -> None:
+    variadic, _ = is_variadic(target_expression)
+
+    if variadic:
+        raise SpspInvalidBindingError(f'Variadic rebinding not allowed')
+
+    if len(target_expression.items) > len(values):
+        raise SpspInvalidBindingError(f'Not enough values to unpack (expected {len(target_expression.items)})')
+
+    if len(target_expression.items) < len(values) and not variadic:
+        raise SpspInvalidBindingError(f'Too many values to unpack (expected {len(target_expression.items)})')
+
+    for target, value in zip(target_expression.items, values):
+        if isinstance(target, Expression.Identifier):
+            scope.rebind(target.name, value, mutable)
+            continue
+
+        if isinstance(target, Expression.AttributeAccess):
+            set_attribute_value(
+                get_attribute_value(scope.value(target.name), target.attributes[:-1]),
+                target.attributes[-1],
+                value,
+            )
+            continue
+
+        if isinstance(target, Expression.List):
+            rebind_structural(target, value, mutable, scope)
+            continue
+
+        raise SpspInvalidBindingTargetError(target)
+
+
 @special_form(Keyword.Let, arity=2)
 def _let(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
     target, value_expression = arguments
@@ -269,6 +306,26 @@ def _let(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
     if isinstance(target, Expression.List):
         value = evaluate(value_expression, scope)
         bind_structural(target, value, mutable=True, scope=scope)
+        return value
+
+    raise SpspInvalidBindingTargetError(target)
+
+
+@special_form(Keyword.Rebind, arity=2)
+def _rebind(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
+    target, value_expression = arguments
+
+    if isinstance(target, Expression.Identifier):
+        value = evaluate(value_expression, scope)
+        scope.rebind(target.name, value, mutable=True)
+        return value
+
+    if isinstance(target, Expression.AttributeAccess):
+        raise SpspInvalidBindingTargetError(target, f'Use "{Keyword.Let}" to change attribute values')
+
+    if isinstance(target, Expression.List):
+        value = evaluate(value_expression, scope)
+        rebind_structural(target, value, mutable=True, scope=scope)
         return value
 
     raise SpspInvalidBindingTargetError(target)

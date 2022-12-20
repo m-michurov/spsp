@@ -501,7 +501,53 @@ None
 
 ## Динамические лексические контексты (по аналогии с binding в Clojure)
 
-**[TODO]**
+Пример из clojure ([ссылка](https://clojuredocs.org/clojure.core/binding)):
+```lisp
+;; Here are the definitions.
+(defn mymax [x y]
+  (min x y))
+
+(defn find-max [x y]
+  (max x y))
+
+user=> (let [max mymax]
+         (find-max 10 20))
+
+20 ;let is ineffective outside current lexical scope
+
+
+user=> (binding [max mymax]
+         (find-max 10 20))
+
+10 ;because max is now acting as min
+```
+
+Как это у нас:
+```lisp
+>>> (def mymax [x y] (min x y))
+<spsp.evaluation.Function object at 0x000001CD26E6E250>
+>>> (def find-max [x y] (max x y)) 
+<spsp.evaluation.Function object at 0x000001CD26E6ED50>
+>>> (do (let max mymax) (find-max 10 20))
+20
+>>> (binding max mymax (find-max 10 20))  
+10
+>>>
+```
+
+`binding` реализован через макрос и использует ключевое слово `rebind`,
+которое позволяет изменить значение переменной в родительской области
+видимости.
+
+Пример:
+```lisp
+>>> (let sum 0)
+0
+>>> (for i [1 2 3] (rebind sum (+ sum i)))
+None
+>>> sum
+6
+```
 
 ## Механизм, подобный макросу, но генерирующий не Lisp-код, а непосредственно код для платформы исполнения
 
