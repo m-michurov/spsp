@@ -31,14 +31,14 @@ def parse_structural_binding_target(
 
         if isinstance(item, Expression.List):
             if not allow_nested:
-                raise SpspValueError(f'Structural binding not allowed')
+                raise SpspInvalidBindingTargetError(target.code, f'Structural binding not allowed in this context')
 
             result.append(parse_structural_binding_target(item))
             continue
 
         if isinstance(item, Expression.AttributeAccess):
             if not allow_attributes:
-                raise SpspValueError(f'Attribute cannot be binding targets in this context')
+                raise SpspInvalidBindingTargetError(item.code, f'Attribute cannot be a binding target in this context')
 
             result.append(item)
             continue
@@ -101,7 +101,7 @@ def rebind_structural(
     variadic = is_variadic(bind_target)
 
     if variadic:
-        raise SpspInvalidBindingError(f'Variadic rebinding not allowed')
+        raise SpspInvalidBindingTargetError(str(bind_target), f'Variadic rebinding not allowed in this context')
 
     if len(bind_target) > len(values):
         raise SpspInvalidBindingError(f'Not enough values to unpack (expected {len(bind_target)}, got {len(values)})')
@@ -144,7 +144,7 @@ def is_variadic(target: StructuralBindingTarget) -> bool:
 
     rest_identifier = target[-1]
     if not isinstance(rest_identifier, Expression.Identifier):
-        raise SpspInvalidBindingTargetError(rest_identifier, 'Cannot bind varargs to')
+        raise SpspInvalidBindingTargetError(rest_identifier.code, 'Cannot bind varargs to')
 
     return True
 
