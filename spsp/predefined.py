@@ -40,7 +40,18 @@ def define(
 
 define(Keyword.ImportModule, importlib.import_module)
 
-define('call', lambda fn, args: fn(*args))
+
+@define('call')
+def _call(
+        fn: Callable[[...], Any],
+        args: Any,
+        kwargs: dict[str, Any] | None = None) -> Any:
+    if kwargs is None:
+        return fn(*args)
+    
+    return fn(*args, **kwargs)
+
+
 define('doc', lambda obj: obj.__doc__)
 
 define('predefined', lambda: list(map(str, predefined())))
