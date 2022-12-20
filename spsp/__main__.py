@@ -38,7 +38,7 @@ def find_line(input_stream: TextIO, position: int) -> (str, int, int):
     line_no = 1
 
     line = ''
-    line_start = 0
+    line_start = None
     for line in input_stream:
         read += len(line)
 
@@ -48,13 +48,14 @@ def find_line(input_stream: TextIO, position: int) -> (str, int, int):
 
         line_no += 1
 
+    if line_start is None:
+        line_no -= 1
+        line_start = read - len(line)
+
     position_in_line = position - line_start
     line = line.rstrip()
 
-    tabs_count = line.count('\t')
-    line = line.replace('\t', ' ' * 4)
-
-    position_in_line = position_in_line - tabs_count + 4 * tabs_count
+    line = line.replace('\t', ' ')
 
     input_stream.seek(initial_pos)
 
