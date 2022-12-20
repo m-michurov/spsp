@@ -1,0 +1,21 @@
+;; requires std-lib, numeric, transducers
+
+(let xf
+    (compose
+        (filter-transducer even?)
+        (map-transducer (lambda [x] (// x 2)))
+        (take-transducer 4)))
+
+(let +* (make-variadic + 0))
+
+(print
+    (transduce xf +* (range 42)))
+
+(let xf
+    (compose
+        (map-transducer str)
+        (filter-transducer (lambda [it] (contains it '3')))
+        (take-transducer 10)))
+
+(print
+    (transduce xf append (range 42) []))
