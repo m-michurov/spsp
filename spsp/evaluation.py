@@ -1,5 +1,4 @@
-from dataclasses import dataclass
-from typing import Any, Callable, TypeAlias, Type, Collection
+from typing import Any, Callable, TypeAlias, Type
 
 from . import Expression
 from .attribute_utility import (
@@ -13,8 +12,10 @@ from .errors import (
     SpspValueError,
     SpspEvaluationError
 )
+from .function import Function
 from .keywords import Keyword
 from .lazy import Lazy
+from .macro import Macro
 from .scope import Scope
 
 __all__ = [
@@ -22,56 +23,10 @@ __all__ = [
 ]
 
 from .structural_binding import (
-    StructuralBindingTarget,
     parse_structural_binding_target,
     bind_structural,
     rebind_structural
 )
-
-
-class Arguments:
-    _target: StructuralBindingTarget
-
-    def __init__(
-            self,
-            target: Expression.List,
-            allow_structured_binding: bool = True
-    ) -> None:
-        if not isinstance(target, Expression.List):
-            raise SpspValueError(f'Binding target must be {Expression.List.__name__}')
-
-        self._target = parse_structural_binding_target(
-            target,
-            allow_structured_binding,
-            allow_attributes=False
-        )
-
-    def bind(self, values: Collection[Any], mutable: bool, scope: Scope) -> None:
-        bind_structural(self._target, values, mutable, scope)
-
-
-@dataclass(frozen=True, repr=False)
-class Function:
-    _arguments: Arguments
-    _body: Expression.AnyExpression
-    _closure_scope: Scope
-
-    def __call__(self, *args: Any) -> Any:
-        return evaluate(self._body, scope=self._bind_arguments(args))
-
-    @property
-    def __name__(self) -> str:
-        return repr(self)
-
-    def _bind_arguments(self, args: Collection[Any]) -> Scope:
-        local_scope = self._closure_scope.derive()
-        self._arguments.bind(args, mutable=False, scope=local_scope)
-        return local_scope
-
-
-class Macro(Function):
-    pass
-
 
 SpecialEvaluator: TypeAlias = Callable[[tuple[Expression.AnyExpression, ...], Scope], Any]
 special_forms: dict[str, SpecialEvaluator] = {}
@@ -254,12 +209,14 @@ def _del(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
 
 @special_form(Keyword.Lambda, arity=2)
 def _lambda(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
-    args, body = arguments
+    args_expression, body_expression = arguments
 
-    if not isinstance(args, Expression.List):
+    if not isinstance(args_expression, Expression.List):
         raise SpspValueError(f'"{Keyword.Lambda}" arguments list must be {Expression.List.__name__}')
 
-    return Function(Arguments(args), body, scope.derive())
+    arguments = parse_structural_binding_target(args_expression, allow_attributes=False)
+
+    return Function(arguments, body_expression, evaluate, scope.derive())
 
 
 @special_form(Keyword.Do, arity=VARIADIC)
@@ -313,13 +270,11 @@ def _eval(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
 
 @special_form(Keyword.Macro, arity=2)
 def _macro(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
-    args, body = arguments
+    args_expression, body_expression = arguments
 
-    if not isinstance(args, Expression.List):
+    if not isinstance(args_expression, Expression.List):
         raise SpspValueError(f'"{Keyword.Macro}" arguments list must be {Expression.List.__name__}')
 
-    return Macro(
-        Arguments(args, allow_structured_binding=False),
-        body,
-        scope.derive()
-    )
+    arguments = parse_structural_binding_target(args_expression, allow_nested=False, allow_attributes=False)
+
+    return Macro(arguments, body_expression, evaluate, scope.derive())
