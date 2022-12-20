@@ -1,0 +1,85 @@
+(import-from functools [reduce])
+
+(def filter-transformer [pred]
+    (lambda [reducing-function]
+        (lambda [acc element]
+            (if (pred element)
+                (reducing-function acc element)
+                acc))))
+
+(def map-transformer [func]
+    (lambda [reducing-function]
+        (lambda [acc element]
+            (reducing-function
+                acc
+                (func element)))))
+
+(def take-transformer [n]
+  (lambda [reducing-function]
+    (do
+        (let n-left n)
+        (lambda [acc element]
+            (if (> n-left 0)
+                (do
+                    (rebind n-left (- n-left 1))
+                    (reducing-function acc element))
+                acc)))))
+
+(def filter-transducer [pred]
+    (lambda [reducing-function]
+        (lambda [& *args]
+            (if (not *args)
+                (reducing-function)
+                (if (pred (second *args))
+                    (reducing-function (first *args) (second *args))
+                    (first *args))))))
+
+(def map-transducer [func]
+    (lambda [reducing-function]
+        (lambda [& *args]
+            (if (not *args)
+                (reducing-function)
+                (reducing-function (first *args) (func (second *args)))))))
+
+(def take-transducer [n]
+  (lambda [reducing-function]
+    (do
+        (let n-left n)
+        (lambda [& *args]
+            (if (not *args)
+                (reducing-function)
+                (if (> n-left 0)
+                    (do
+                        (rebind n-left (- n-left 1))
+                        (reducing-function (first *args) (second *args)))
+                    (first *args)))))))
+
+(def compose-2 [fn1 fn2]
+    (lambda [reduce-func]
+        (fn1 (fn2 reduce-func))))
+
+(def compose [fn1 fn2 & *rest]
+    (if *rest
+        (compose-2 fn1 (call compose (+ [fn2] (list *rest))))
+        (compose-2 fn1 fn2)))
+
+(def transduce [xf f coll & init]
+    (if init
+        (reduce (xf f) coll (first init))
+        (do
+            (let reducing-function (xf f))
+            (reduce (xf f) coll (reducing-function)))))
+
+(def transform [xf f coll & init]
+    (if init
+        (reduce (xf f) coll (first init))
+        (reduce (xf f) coll)))
+
+(def sequence [xf coll]
+    (transduce xf append coll []))
+
+(def make-variadic [op init]
+    (lambda [& *args]
+        (if *args
+            (reduce op *args init)
+            init)))
