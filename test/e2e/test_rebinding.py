@@ -3,7 +3,7 @@ import io
 import pytest
 
 from spsp import parse, Tokenizer, Scope, evaluate
-from spsp.errors import SpspEvaluationError, SpspInvalidBindingError
+from spsp.errors import SpspEvaluationError, SpspInvalidBindingError, SpspInvalidBindingTargetError
 
 
 # noinspection DuplicatedCode
@@ -28,5 +28,5 @@ class TestRebind:
                     evaluate(e, local_scope)
 
             # Assert
-            assert isinstance(evaluation_error.value.cause, SpspInvalidBindingError)
+            assert isinstance(evaluation_error.value.cause, SpspInvalidBindingTargetError)
             assert 'variadic' in evaluation_error.value.cause.why.lower()
