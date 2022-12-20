@@ -83,11 +83,11 @@
 	(macro [var coll body] 
 	    (do 
             (let functools (import-module 'functools'))
-	        (let body-fn (eval! (expr! (lambda [(inline! var)] (inline! body)))))
+	        (let body-fn (expr! (lambda [(inline! var)] (inline! body))))
             (expr! 
                 ((inline-value! functools::reduce)
                     (lambda [a b] None) 
-                    (map (inline-value! body-fn) (inline! coll))
+                    (map (inline! body-fn) (inline! coll))
                     None)))))
 
 (let when
