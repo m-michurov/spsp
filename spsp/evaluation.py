@@ -57,7 +57,7 @@ class Arguments:
         self._target = target
 
     def bind(self, values: Collection[Any], mutable: bool, scope: Scope) -> None:
-        bind_structural(self._target, values, mutable, scope.bind)
+        bind_structural(self._target, values, mutable, scope)
 
 
 @dataclass(frozen=True, repr=False)
@@ -209,8 +209,11 @@ def bind_structural(
         target_expression: Expression.List,
         values: Collection[Any],
         mutable: bool,
-        bind: Callable[[str, Any, bool], None]
+        scope: Scope,
+        rebind: bool = False
 ) -> None:
+    bind: Callable[[str, Any, bool], None] = scope.rebind if rebind else scope.bind
+
     variadic, rest_identifier = is_variadic(target_expression)
 
     targets = target_expression.items[:-2] if variadic else target_expression.items
@@ -228,20 +231,20 @@ def bind_structural(
 
         if isinstance(target, Expression.AttributeAccess):
             set_attribute_value(
-                get_attribute_value(value(target.name), target.attributes[:-1]),
+                get_attribute_value(scope.value(target.name), target.attributes[:-1]),
                 target.attributes[-1],
                 value,
             )
             continue
 
         if isinstance(target, Expression.List):
-            bind_structural(target, value, mutable, bind)
+            bind_structural(target, value, mutable, scope, rebind)
             continue
 
         raise SpspInvalidBindingTargetError(target)
 
     if rest_identifier is not None:
-        bind(
+        scope.bind(
             rest_identifier.name,
             tuple(values[len(targets):]),
             mutable
@@ -268,7 +271,7 @@ def _let(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
 
     if isinstance(target, Expression.List):
         value = evaluate(value_expression, scope)
-        bind_structural(target, value, mutable=True, bind=scope.bind)
+        bind_structural(target, value, mutable=True, scope=scope)
         return value
 
     raise SpspInvalidBindingTargetError(target)
@@ -288,7 +291,7 @@ def _rebind(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> An
 
     if isinstance(target, Expression.List):
         value = evaluate(value_expression, scope)
-        bind_structural(target, value, mutable=True, bind=scope.rebind)
+        bind_structural(target, value, mutable=True, scope=scope, rebind=True)
         return value
 
     raise SpspInvalidBindingTargetError(target)
