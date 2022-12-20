@@ -65,14 +65,13 @@ class Function:
     _arguments: Arguments
     _body: Expression.AnyExpression
     _closure_scope: Scope
-    _name: str = None
 
     def __call__(self, *args: Any) -> Any:
         return evaluate(self._body, scope=self._bind_arguments(args))
 
     @property
     def __name__(self) -> str:
-        return self._name
+        return repr(self)
 
     def _bind_arguments(self, args: Collection[Any]) -> Scope:
         local_scope = self._closure_scope.derive()
