@@ -132,4 +132,7 @@
                     (except e (raise e))
                     (finally (rebind (inline! vars) _old-vars)))))))
 
+(def append [acc elem] (+ (list acc) [elem]))
+(def prepend [acc elem] (+ [elem] (list acc)))
+
 (del operator)
