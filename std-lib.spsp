@@ -55,10 +55,10 @@
                     (inline-value! *rest)
                     (inline! op1))))))
 
-(let def 
+(let def
     (macro [name args body]
-        (expr! 
-            (let 
+        (expr!
+            (let
                 (inline! name)
                 (lambda (inline! args) (inline! body))))))
 
@@ -79,23 +79,45 @@
                     (inline! identifiers)
                     (inline-value! items))))))
 
-(let for 
-	(macro [var coll body] 
-	    (do 
+(let for
+	(macro [var coll body]
+	    (do
             (let functools (import-module 'functools'))
 	        (let body-fn (eval! (expr! (lambda [(inline! var)] (inline! body)))))
-            (expr! 
+            (expr!
                 ((inline-value! functools::reduce)
-                    (lambda [a b] None) 
+                    (lambda [a b] None)
                     (map (inline-value! body-fn) (inline! coll))
                     None)))))
 
 (let when
-	(macro [cond body]
-		(expr!
-			(if (inline! cond)
-				(inline! body)
-				None))))
+	(macro [cond body & *rest]
+		(if *rest
+		    (expr!
+			    (if (inline! cond)
+				    (inline! body)
+				    (inline! (call when *rest))))
+		    (if (= cond::name 'default')
+                body
+                (expr!
+                    (if (inline! cond)
+                        (inline! body)
+                        None))))))
+
+(let switch
+    (macro [expression value body & *rest]
+        (if *rest
+            (expr!
+                (do (let _expression-value (inline! expression))
+                    (if (= _expression-value (inline! value))
+                        (inline! body)
+                        (inline! (call switch (+ [(expr! _expression-value)] (list *rest)))))))
+		    (if (= (getattr value 'name' (object)) 'default')
+                body
+                (expr!
+                    (if (= (inline! expression) (inline! value))
+                        (inline! body)
+                        None))))))
 
 (let try
     (macro [body handler & finally]
