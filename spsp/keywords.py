@@ -34,6 +34,8 @@ class Keyword(str, Enum):
     Inline = 'inline!'
     InlineLiteral = 'inline-value!'
 
+    Symbolic = 'symbolic!'
+
     VariadicMarker = '&'
 
     Raise = 'raise'
