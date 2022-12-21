@@ -601,6 +601,30 @@ None
             (reducing-function result))))
 ```
 
+Из-за многофункциональности `+` в python решили сделать
+`(make-variadic + 0)` явной функцией, потому что для разных
+типов может быть нужно разное начальной значение. В clojure
+операция `(+)` возвращает 0 по умолчанию.
+
+Пример реализации простого трансьюдьесера:
+
+```lisp
+(def map-transducer [func]
+    (lambda [reducing-function]
+        (lambda 
+            ([] (reducing-function))
+            ([acc] (reducing-function acc))
+            ([acc element]
+                (reducing-function
+                    acc
+                    (func element))))))
+```
+
+Изначально было сделано через вариадическую функцию, 
+но такой способ оказался плохо читаемым и сложным,
+поэтому в язык были добавлены перегрузки. Больше примеров
+можно найти [тут](examples/transducers-demo.spsp).
+
 Трансдьюсеры можно комбинировать с помощью `compose`:
 
 ```lisp
