@@ -55,12 +55,12 @@
                     (inline-value! *rest)
                     (inline! op1))))))
 
-(let def 
-    (macro [name args body]
+(let def
+    (macro [name & *signatures]
         (expr! 
             (let 
                 (inline! name)
-                (lambda (inline! args) (inline! body))))))
+                (inline! (symbolic! (+ [(expr! lambda)] (list *signatures))))))))
 
 (let import
     (macro [module-name]
@@ -98,22 +98,21 @@
 				None))))
 
 (let try
-    (macro [body handler & finally]
-        (do
-            (when (!= (getattr (first handler) "name") "except")
-                (raise (ValueError 'Exception handler should start with "except"')))
-            (let finally
-                (if finally
-                    (first finally)
-                    (expr! (finally None))))
-            (when (!= (getattr (first finally) "name") "finally")
-                (raise (ValueError 'Finally statement should start with "finally"')))
-            (let exception-identifier (second handler))
-            (expr!
-                (run-catching
-                    (lambda [] (inline! body))
-                    (lambda [(inline! exception-identifier)] (inline! (last handler)))
-                    (lambda [] (inline! (second finally))))))))
+    (macro
+        ([body handler]
+            (call try [body handler (expr! (finally None))]))
+        ([body handler finally]
+            (do
+                (when (!= (getattr (first handler) "name") "except")
+                    (raise (ValueError 'Exception handler should start with "except"')))
+                (when (!= (getattr (first finally) "name") "finally")
+                    (raise (ValueError 'Finally statement should start with "finally"')))
+                (let exception-identifier (second handler))
+                (expr!
+                    (run-catching
+                        (lambda [] (inline! body))
+                        (lambda [(inline! exception-identifier)] (inline! (last handler)))
+                        (lambda [] (inline! (second finally)))))))))
 
 (let lazy
 	(macro [body]

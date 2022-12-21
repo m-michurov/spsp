@@ -1,20 +1,20 @@
-from typing import Any
+from typing import Any, Callable
 
 from . import Expression
 from .attribute_utility import set_attribute_value, get_attribute_value, delete_attribute_value
 from .errors import SpspInvalidBindingTargetError, SpspValueError, SpspArityError
 from .evaluation import evaluate
-from .function import Function
+from .function import Function, Overload
 from .keywords import Keyword
 from .macro import Macro
 from .scope import Scope
-from .special_form import special_form, VARIADIC
+from .special_form import special_form, fixed_arguments_count, variadic
 from .structural_binding import parse_structural_binding_target, bind_structural, rebind_structural
 
 __all__ = []
 
 
-@special_form(Keyword.If, arity=3)
+@special_form(Keyword.If, fixed_arguments_count(3))
 def _if(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
     condition, when_true, when_false = arguments
 
@@ -24,7 +24,7 @@ def _if(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
     return evaluate(when_false, scope)
 
 
-@special_form(Keyword.Let, arity=2)
+@special_form(Keyword.Let, fixed_arguments_count(2))
 def _let(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
     target_expression, value_expression = arguments
 
@@ -52,7 +52,7 @@ def _let(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
     raise SpspInvalidBindingTargetError(target_expression)
 
 
-@special_form(Keyword.Rebind, arity=2)
+@special_form(Keyword.Rebind, fixed_arguments_count(2))
 def _rebind(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
     target_expression, value_expression = arguments
 
@@ -74,7 +74,7 @@ def _rebind(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> An
     raise SpspInvalidBindingTargetError(target_expression)
 
 
-@special_form(Keyword.Del, arity=1)
+@special_form(Keyword.Del, fixed_arguments_count(1))
 def _del(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
     target, = arguments
 
@@ -92,19 +92,55 @@ def _del(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
     raise SpspInvalidBindingTargetError(target)
 
 
-@special_form(Keyword.Lambda, arity=2)
+def collect_overloads(
+        arguments: tuple[Expression.AnyExpression, ...],
+        parse_signature: Callable[[Expression.List, Expression.AnyExpression], Overload],
+        keyword: str) -> tuple[Overload, ...]:
+    overloads: list[Overload] = []
+
+    for signature in arguments:
+        match signature:
+            case Expression.Symbolic(position=_, operation=Expression.List(), arguments=(_, )):
+                signature: Expression.Symbolic
+                overloads.append(parse_signature(*tuple(signature)))
+            case _:
+                raise SpspValueError(f'"{keyword}": usage: ({keyword} <args-list> <body>) '
+                                     f'or ({keyword} (<args-list> <body>) +)')
+
+    return tuple(overloads)
+
+
+@special_form(Keyword.Lambda, variadic())
 def _lambda(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
-    args_expression, body_expression = arguments
+    def parse_signature(signature: Expression.AnyExpression) -> Overload:
+        match signature:
+            case Expression.Symbolic(position=_, operation=Expression.List(), arguments=(_, )):
+                signature: Expression.Symbolic
+                _args_expression, _body_expression = tuple(signature)
 
-    if not isinstance(args_expression, Expression.List):
-        raise SpspValueError(f'"{Keyword.Lambda}" arguments list must be {Expression.List.__name__}')
+                _args = parse_structural_binding_target(_args_expression, allow_attributes=False)
+                return Overload(_args, _body_expression)
+            case _:
+                raise SpspValueError(
+                    f'"{Keyword.Lambda}": use ({Keyword.Lambda} <args-list> <body>) '
+                    f'or ({Keyword.Lambda} (<args-list> <body>) +)'
+                )
 
-    arguments = parse_structural_binding_target(args_expression, allow_attributes=False)
+    match arguments:
+        case (Expression.List(), _):
+            args_expression, body_expression = arguments
+            args_expression: Expression.List
 
-    return Function(arguments, body_expression, evaluate, scope.derive())
+            args = parse_structural_binding_target(args_expression, allow_attributes=False)
+            return Function((Overload(args, body_expression),), scope.derive())
+
+    return Function(
+        tuple(map(parse_signature, arguments)),
+        scope.derive()
+    )
 
 
-@special_form(Keyword.Do, arity=VARIADIC)
+@special_form(Keyword.Do, variadic())
 def _do(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
     local_scope = scope.derive()
 
@@ -115,7 +151,7 @@ def _do(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
     return result
 
 
-@special_form(Keyword.Expression, arity=1)
+@special_form(Keyword.Expression, fixed_arguments_count(1))
 def _as_code(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
     expr, = arguments
 
@@ -146,20 +182,46 @@ def _as_code(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> A
     return ast
 
 
-@special_form(Keyword.EvaluateExpression, arity=1)
+@special_form(Keyword.EvaluateExpression, fixed_arguments_count(1))
 def _eval(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
     expr, = arguments
 
     return evaluate(evaluate(expr, scope), scope)
 
 
-@special_form(Keyword.Macro, arity=2)
+@special_form(Keyword.Macro, variadic())
 def _macro(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
-    args_expression, body_expression = arguments
+    def parse_signature(signature: Expression.AnyExpression) -> Overload:
+        match signature:
+            case Expression.Symbolic(position=_, operation=Expression.List(), arguments=(_, )):
+                signature: Expression.Symbolic
+                _args_expression, _body_expression = tuple(signature)
 
-    if not isinstance(args_expression, Expression.List):
-        raise SpspValueError(f'"{Keyword.Macro}" arguments list must be {Expression.List.__name__}')
+                _args = parse_structural_binding_target(_args_expression, allow_attributes=False, allow_nested=False)
+                return Overload(_args, _body_expression)
+            case _:
+                raise SpspValueError(
+                    f'"{Keyword.Macro}": use ({Keyword.Macro} <args-list> <body>) '
+                    f'or ({Keyword.Macro} (<args-list> <body>) +)'
+                )
 
-    arguments = parse_structural_binding_target(args_expression, allow_nested=False, allow_attributes=False)
+    match arguments:
+        case (Expression.List(), _):
+            args_expression, body_expression = arguments
+            args_expression: Expression.List
 
-    return Macro(arguments, body_expression, evaluate, scope.derive())
+            args = parse_structural_binding_target(args_expression, allow_attributes=False, allow_nested=False)
+            return Macro((Overload(args, body_expression),), scope.derive())
+
+    return Macro(
+        tuple(map(parse_signature, arguments)),
+        scope.derive()
+    )
+
+
+@special_form(Keyword.Symbolic, fixed_arguments_count(1))
+def _symbolic(arguments: tuple[Expression.AnyExpression, ...], scope: Scope) -> Any:
+    expr, = arguments
+    items = evaluate(expr, scope)
+    op, args = items[0], items[1:]
+    return Expression.Symbolic(expr.position, op, tuple(args))
