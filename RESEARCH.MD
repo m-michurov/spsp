@@ -552,3 +552,76 @@ None
 ## Механизм, подобный макросу, но генерирующий не Lisp-код, а непосредственно код для платформы исполнения
 
 **[TODO]**
+
+
+## Трансдьюсеры
+
+Пример из clojure ([ссылка](https://clojure.org/reference/transducers#_transduce)):
+```lisp
+(def xf (comp (filter odd?) (map inc)))
+(transduce xf + (range 5))
+;; => 6
+(transduce xf + 100 (range 5))
+;; => 106
+```
+
+Как это у нас:
+```lisp
+>>> (let xf
+...     (compose
+...         (filter-transducer odd?) 
+...         (map-transducer inc)))
+<spsp.function.Function object at 0x0000022EA9A2CB50>
+>>> (let +* (make-variadic + 0))
+<spsp.function.Function object at 0x0000022EA9A38B50>
+>>> (transduce xf +* (range 5))
+6
+>>> (transduce xf +* 100 (range 5))
+106
+```
+
+`filter-transducer`, `map-transducer` это реализованные на нашем языке
+трансдьюссеры. Они представляют собой трансформеры редукционной функции
+с перегрузками для 0, 1, 2 аргументов. Идею реализации взяли [отсюда](https://habr.com/ru/post/247889/).
+Функция transduce работает как reduce, но в случае отсутствия начального значения
+для аккумулятора берет не первый элемент коллекции, а вызывают редукционную
+функцию с 0 аргументов:
+
+```lisp
+(def transduce 
+    ([xf f coll]
+        (do
+            (let reducing-function (xf f))
+            (let result (reduce reducing-function coll (reducing-function)))
+            (reducing-function result)))
+    ([xf f init coll]
+        (do
+            (let reducing-function (xf f))
+            (let result (reduce reducing-function coll init))
+            (reducing-function result))))
+```
+
+Трансдьюсеры можно комбинировать с помощью `compose`:
+
+```lisp
+(let xf
+    (compose
+         (filter-transducer odd?) 
+         (map-transducer inc)
+         (take-transducer 5)))
+```
+
+У нас есть также аналог sequence из clojure:
+
+```lisp
+>>> (let xf
+...     (compose
+...         (filter-transducer odd?) 
+...         (map-transducer inc)
+...         (take-transducer 5)))
+<spsp.function.Function object at 0x0000022EA9A86B90>
+>>> (sequence xf (range 1000))        
+[2, 4, 6, 8, 10]
+>>> 
+```
+
