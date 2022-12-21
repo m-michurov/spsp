@@ -10,7 +10,9 @@ __all__ = [
     'StructuralBindingTarget',
     'parse_structural_binding_target',
     'bind_structural',
-    'rebind_structural'
+    'rebind_structural',
+    'is_variadic',
+    'split_variadic_binding_target'
 ]
 
 StructuralBindingTarget: TypeAlias = \
