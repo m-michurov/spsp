@@ -54,7 +54,7 @@
             (reducing-function result))))
 
 (def sequence [xf coll]
-    (transduce xf append coll []))
+    (transduce xf append [] coll))
 
 (def make-variadic [op init]
     (lambda [& *args]
