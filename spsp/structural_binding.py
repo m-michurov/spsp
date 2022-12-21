@@ -1,10 +1,10 @@
 from typing import Collection, Any, TypeAlias, Union
 
 from . import Expression
-from .scope import Scope
 from .attribute_utility import set_attribute_value, get_attribute_value
 from .errors import SpspValueError, SpspInvalidBindingTargetError, SpspInvalidBindingError
 from .keywords import Keyword
+from .scope import Scope
 
 __all__ = [
     'StructuralBindingTarget',

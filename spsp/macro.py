@@ -1,6 +1,5 @@
 from spsp.function import Function
 
-
 __all__ = [
     'Macro'
 ]
