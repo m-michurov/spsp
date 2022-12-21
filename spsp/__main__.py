@@ -4,12 +4,12 @@ import io
 import sys
 from typing import Collection, TextIO
 
-from . import Tokenizer
+from .tokenizer import Tokenizer
+from .errors import SpspEvaluationError, SpspSyntaxError
 from .evaluation import evaluate
 from .parser import parse
 from .scope import Scope
 from .special_symbols import SpecialSymbols
-from .errors import SpspEvaluationError, SpspSyntaxError
 
 
 def read_line() -> str:
@@ -114,7 +114,7 @@ def _main(args: list[str]) -> None:
 
     if args[-1] != '--repl':
         run_files(args[1:], scope)
-        return 
+        return
 
     if not run_files(args[1:-1], scope):
         return
