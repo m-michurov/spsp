@@ -1,5 +1,9 @@
 from enum import Enum
 
+__all__ = [
+    'Keyword'
+]
+
 
 class Keyword(str, Enum):
     NoneLiteral = 'None'

@@ -2,8 +2,11 @@ import io
 
 import pytest
 
-from spsp import parse, Tokenizer, Scope, evaluate
-from spsp.errors import SpspEvaluationError
+from spsp.errors import SpspEvaluationError, SpspInvalidBindingTargetError
+from spsp.evaluation import evaluate
+from spsp.parser import parse
+from spsp.scope import Scope
+from spsp.tokenizer import Tokenizer
 
 
 # noinspection DuplicatedCode
@@ -73,3 +76,51 @@ class TestStructuralBindings:
             # Assert
             assert scope.value('x').a == 1
             assert scope.value('x').b == 2
+
+    def test_function_attribute_argument(self) -> None:
+        # Arrange
+        code = '(lambda [x::a x::b] None)'
+        with io.StringIO(code) as input_stream:
+            expressions = list(parse(Tokenizer(input_stream)))
+            scope = Scope.empty()
+
+            # Act
+            with pytest.raises(SpspEvaluationError) as evaluation_error:
+                for e in expressions:
+                    evaluate(e, scope)
+
+            # Assert
+            assert isinstance(evaluation_error.value.cause, SpspInvalidBindingTargetError)
+            assert 'attribute' in evaluation_error.value.cause.why.lower()
+
+    def test_macro_attribute_argument(self) -> None:
+        # Arrange
+        code = '(macro [x::a x::b] None)'
+        with io.StringIO(code) as input_stream:
+            expressions = list(parse(Tokenizer(input_stream)))
+            scope = Scope.empty()
+
+            # Act
+            with pytest.raises(SpspEvaluationError) as evaluation_error:
+                for e in expressions:
+                    evaluate(e, scope)
+
+            # Assert
+            assert isinstance(evaluation_error.value.cause, SpspInvalidBindingTargetError)
+            assert 'attribute' in evaluation_error.value.cause.why.lower()
+
+    def test_macro_nested_structural_binding(self) -> None:
+        # Arrange
+        code = '(macro [a [b c]] None)'
+        with io.StringIO(code) as input_stream:
+            expressions = list(parse(Tokenizer(input_stream)))
+            scope = Scope.empty()
+
+            # Act
+            with pytest.raises(SpspEvaluationError) as evaluation_error:
+                for e in expressions:
+                    evaluate(e, scope)
+
+            # Assert
+            assert isinstance(evaluation_error.value.cause, SpspInvalidBindingTargetError)
+            assert 'structural' in evaluation_error.value.cause.why.lower()

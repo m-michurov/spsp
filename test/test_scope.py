@@ -2,8 +2,9 @@ from unittest.mock import patch
 
 import pytest
 
-from spsp import Scope
-from spsp.errors import SpspNameError, SpspInvalidBindingTargetError
+from spsp.errors import SpspInvalidBindingTargetError
+from spsp.errors import SpspNameError
+from spsp.scope import Scope
 
 
 # noinspection DuplicatedCode
@@ -11,8 +12,8 @@ class TestScope:
     @pytest.mark.parametrize(
         'mutable',
         (
-            True,
-            False
+                True,
+                False
         )
     )
     def test_bind(self, mutable: bool) -> None:

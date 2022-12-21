@@ -1,13 +1,11 @@
 import importlib
 from typing import Mapping, Callable, Any
 
-from .keywords import Keyword
-
 from .errors import (
     SpspValueError,
     SpspEvaluationError
 )
-
+from .keywords import Keyword
 from .lazy import Lazy
 
 __all__ = [
@@ -48,7 +46,7 @@ def _call(
         kwargs: dict[str, Any] | None = None) -> Any:
     if kwargs is None:
         return fn(*args)
-    
+
     return fn(*args, **kwargs)
 
 

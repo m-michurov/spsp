@@ -3,8 +3,9 @@ from typing import Type
 
 import pytest
 
-from spsp import Tokenizer, Token
+from spsp import Token
 from spsp.errors import SpspSyntaxError
+from spsp.tokenizer import Tokenizer
 
 
 # noinspection DuplicatedCode
