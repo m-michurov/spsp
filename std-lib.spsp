@@ -141,4 +141,13 @@
     ([acc] acc)
     ([acc elem] (+ [elem] (list acc))))
 
+(def mapping [& *args]
+    (do
+        (when (% (len *args) 2)
+            (raise (ValueError 'Argument count must be a multiple of 2')))
+        (let keys (get *args (slice 0 None 2)))
+        (let values (get *args (slice 1 None 2)))
+        (let kv-pairs (zip keys values))
+        (dict kv-pairs)))
+
 (del operator)
