@@ -11,6 +11,9 @@
 (print
     (transduce xf +* (range 42)))
 
+(print
+    (sequence xf (range 42)))
+
 (let xf
     (compose
         (map-transducer str)
@@ -18,4 +21,4 @@
         (take-transducer 10)))
 
 (print
-    (transduce xf append (range 42) []))
+    (transduce xf append ['morbius'] (range 42)))
