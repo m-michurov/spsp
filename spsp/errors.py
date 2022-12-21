@@ -93,11 +93,20 @@ class SpspArityError(SpspBaseError):
     This is an evaluation time error.
     """
     what: Any
-    expected: int
-    actual: int
+    expected: int | None = None
+    actual: int | None = None
 
     def __str__(self) -> str:
-        return f'{self.what}: expected {self.expected} arguments, got {self.actual}'
+        if self.expected is not None and self.actual is not None:
+            return f'{self.what}: expected {self.expected} arguments, got {self.actual}'
+
+        if self.expected is not None:
+            return f'{self.what}: expected {self.expected} arguments'
+
+        if self.actual is not None:
+            return f'{self.what}: got {self.actual} arguments'
+
+        return self.what
 
 
 @dataclass(frozen=True)
