@@ -2,8 +2,11 @@ import io
 
 import pytest
 
-from spsp import parse, Tokenizer, Scope, evaluate
-from spsp.errors import SpspEvaluationError, SpspInvalidBindingError, SpspInvalidBindingTargetError
+from spsp.errors import SpspEvaluationError, SpspInvalidBindingTargetError
+from spsp.evaluation import evaluate
+from spsp.parser import parse
+from spsp.scope import Scope
+from spsp.tokenizer import Tokenizer
 
 
 # noinspection DuplicatedCode
