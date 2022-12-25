@@ -56,11 +56,11 @@
                     (inline! op1))))))
 
 (let def
-    (macro [name args body]
-        (expr!
-            (let
+    (macro [name & *signatures]
+        (expr! 
+            (let 
                 (inline! name)
-                (lambda (inline! args) (inline! body))))))
+                (inline! (symbolic! (+ [(expr! lambda)] (list *signatures))))))))
 
 (let import
     (macro [module-name]
@@ -83,11 +83,11 @@
 	(macro [var coll body]
 	    (do
             (let functools (import-module 'functools'))
-	        (let body-fn (eval! (expr! (lambda [(inline! var)] (inline! body)))))
-            (expr!
+	        (let body-fn (expr! (lambda [(inline! var)] (inline! body))))
+            (expr! 
                 ((inline-value! functools::reduce)
-                    (lambda [a b] None)
-                    (map (inline-value! body-fn) (inline! coll))
+                    (lambda [a b] None) 
+                    (map (inline! body-fn) (inline! coll))
                     None)))))
 
 (let when
@@ -120,22 +120,21 @@
                         None))))))
 
 (let try
-    (macro [body handler & finally]
-        (do
-            (when (!= (getattr (first handler) "name") "except")
-                (raise (ValueError 'Exception handler should start with "except"')))
-            (let finally
-                (if finally
-                    (first finally)
-                    (expr! (finally None))))
-            (when (!= (getattr (first finally) "name") "finally")
-                (raise (ValueError 'Finally statement should start with "finally"')))
-            (let exception-identifier (second handler))
-            (expr!
-                (run-catching
-                    (lambda [] (inline! body))
-                    (lambda [(inline! exception-identifier)] (inline! (last handler)))
-                    (lambda [] (inline! (second finally))))))))
+    (macro
+        ([body handler]
+            (call try [body handler (expr! (finally None))]))
+        ([body handler finally]
+            (do
+                (when (!= (getattr (first handler) "name") "except")
+                    (raise (ValueError 'Exception handler should start with "except"')))
+                (when (!= (getattr (first finally) "name") "finally")
+                    (raise (ValueError 'Finally statement should start with "finally"')))
+                (let exception-identifier (second handler))
+                (expr!
+                    (run-catching
+                        (lambda [] (inline! body))
+                        (lambda [(inline! exception-identifier)] (inline! (last handler)))
+                        (lambda [] (inline! (second finally)))))))))
 
 (let lazy
 	(macro [body]
@@ -153,5 +152,24 @@
                         (inline! body))
                     (except e (raise e))
                     (finally (rebind (inline! vars) _old-vars)))))))
+
+(def append
+    ([] [])
+    ([acc] acc)
+    ([acc elem] (+ (list acc) [elem])))
+
+(def prepend
+    ([] [])
+    ([acc] acc)
+    ([acc elem] (+ [elem] (list acc))))
+
+(def mapping [& *args]
+    (do
+        (when (% (len *args) 2)
+            (raise (ValueError 'Argument count must be a multiple of 2')))
+        (let keys (get *args (slice 0 None 2)))
+        (let values (get *args (slice 1 None 2)))
+        (let kv-pairs (zip keys values))
+        (dict kv-pairs)))
 
 (del operator)

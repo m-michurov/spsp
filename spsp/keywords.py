@@ -1,5 +1,9 @@
 from enum import Enum
 
+__all__ = [
+    'Keyword'
+]
+
 
 class Keyword(str, Enum):
     NoneLiteral = 'None'
@@ -29,6 +33,8 @@ class Keyword(str, Enum):
 
     Inline = 'inline!'
     InlineLiteral = 'inline-value!'
+
+    Symbolic = 'symbolic!'
 
     VariadicMarker = '&'
 

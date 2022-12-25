@@ -1,0 +1,14 @@
+(def odd? [x]
+    (bool (% x 2)))
+
+(def even? [x]
+    (not (% x 2)))
+
+(def inc [x]
+    (+ x 1))
+
+(def dec [x]
+    (- x 1))
+
+(def double [x]
+    (* x 2))
