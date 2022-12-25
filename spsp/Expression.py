@@ -70,7 +70,7 @@ class Literal(AnyExpression):
 
     @property
     def code(self) -> str:
-        return str(self.value)
+        return repr(self.value)
 
 
 @dataclass(frozen=True)
